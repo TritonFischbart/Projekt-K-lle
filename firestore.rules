@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Sicherheitsregeln für die Datenbank:
+// Nur die drei hier eingetragenen Google-Adressen dürfen Daten lesen und ändern.
+// Die echten Adressen trägst du NUR in der Firebase-Konsole ein, nicht hier
+// (diese Datei ist öffentlich auf GitHub sichtbar).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isWG() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in [
+          'adresse-triton@gmail.com',
+          'adresse-julian@gmail.com',
+          'adresse-jana@gmail.com'
+        ];
+    }
+
+    match /{document=**} {
+      allow read, write: if isWG();
+    }
+  }
+}
