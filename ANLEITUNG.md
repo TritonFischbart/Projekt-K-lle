@@ -38,7 +38,7 @@ Du brauchst dein Google-Konto.
 1. In Firestore Database oben den Reiter **„Regeln“** (Rules) öffnen.
 2. Alles, was dort steht, löschen.
 3. Den Inhalt der Datei **`firestore.rules`** aus diesem Projekt hineinkopieren.
-4. Die drei Beispiel-Adressen (`adresse-triton@gmail.com` usw.) durch **eure echten
+4. Die drei Beispiel-Adressen (`adresse-lukas@gmail.com` usw.) durch **eure echten
    Google-Adressen** ersetzen. Wichtig: Hochkommas `' '` und Kommas stehen lassen.
 5. **Veröffentlichen** klicken.
 

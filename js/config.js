@@ -2,7 +2,7 @@
 // Hier kannst du Namen, Farben oder Kategorien ändern.
 
 export const PEOPLE = [
-  { id: 'triton', name: 'Triton', color: '#2f7d4f' },
+  { id: 'lukas', name: 'Lukas', color: '#2f7d4f' },
   { id: 'julian', name: 'Julian', color: '#2b6cb0' },
   { id: 'jana', name: 'Jana', color: '#c05621' },
 ];

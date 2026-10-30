@@ -8,20 +8,20 @@ function daysAgo(n) {
 }
 
 export function createDemoBackend() {
-  const user = { uid: 'demo-triton', email: 'triton@beispiel.de', displayName: 'Triton' };
-  const all = ['triton', 'julian', 'jana'];
+  const user = { uid: 'demo-lukas', email: 'lukas@beispiel.de', displayName: 'Lukas' };
+  const all = ['lukas', 'julian', 'jana'];
   const created = (n) => new Date(Date.now() - n * 86400000);
 
   const store = {
     members: [
-      { id: 'triton', uid: 'demo-triton' },
+      { id: 'lukas', uid: 'demo-lukas' },
       { id: 'julian', uid: 'demo-julian' },
       { id: 'jana', uid: 'demo-jana' },
     ],
     expenses: [
-      { id: 'e1', description: 'Wocheneinkauf Rewe', amountCents: 6420, paidBy: 'triton', splitAmong: all, category: 'lebensmittel', date: daysAgo(1), createdAt: created(1), settlementId: null },
+      { id: 'e1', description: 'Wocheneinkauf Rewe', amountCents: 6420, paidBy: 'lukas', splitAmong: all, category: 'lebensmittel', date: daysAgo(1), createdAt: created(1), settlementId: null },
       { id: 'e2', description: 'Klopapier & Spülmittel', amountCents: 1290, paidBy: 'jana', splitAmong: all, category: 'haushalt', date: daysAgo(3), createdAt: created(3), settlementId: null },
-      { id: 'e3', description: 'Internet Oktober', amountCents: 3999, paidBy: 'triton', splitAmong: all, category: 'nebenkosten', date: daysAgo(5), createdAt: created(5), settlementId: null },
+      { id: 'e3', description: 'Internet Oktober', amountCents: 3999, paidBy: 'lukas', splitAmong: all, category: 'nebenkosten', date: daysAgo(5), createdAt: created(5), settlementId: null },
       { id: 'e4', description: 'Kinotickets', amountCents: 2400, paidBy: 'julian', splitAmong: ['julian', 'jana'], category: 'freizeit', date: daysAgo(6), createdAt: created(6), settlementId: null },
       { id: 'e5', description: 'Pizza-Abend', amountCents: 3600, paidBy: 'jana', splitAmong: all, category: 'lebensmittel', date: daysAgo(30), createdAt: created(30), settlementId: 's1' },
       { id: 'e6', description: 'Putzmittel dm', amountCents: 1850, paidBy: 'julian', splitAmong: all, category: 'haushalt', date: daysAgo(34), createdAt: created(34), settlementId: 's1' },
