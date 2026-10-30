@@ -1,13 +1,12 @@
 // Zugangsdaten für Firebase (die gemeinsame Datenbank).
 // Diese Werte sind nicht geheim – sie sagen der Website nur, wo die Datenbank liegt.
 // Geschützt werden eure Daten durch die Regeln in firestore.rules.
-// Wie du an die Werte kommst, steht in ANLEITUNG.md.
 
 export const firebaseConfig = {
-  apiKey: 'HIER_EINTRAGEN',
-  authDomain: 'HIER_EINTRAGEN',
-  projectId: 'HIER_EINTRAGEN',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: 'HIER_EINTRAGEN',
+  apiKey: 'AIzaSyB-YzxrYXXHTWutYB6rsuLv17R4-XMxnAo',
+  authDomain: 'projekt-koelle.firebaseapp.com',
+  projectId: 'projekt-koelle',
+  storageBucket: 'projekt-koelle.firebasestorage.app',
+  messagingSenderId: '64746922011',
+  appId: '1:64746922011:web:7cccdf1a9bf9566ea6d8be',
 };
