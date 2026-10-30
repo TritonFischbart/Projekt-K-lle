@@ -1,6 +1,6 @@
 # Projekt Kölle
 
-Die WG-Website von Lukas, Julian und Jana.
+Die WG-Website von Jana, Jul und Lukas.
 
 - 💶 **Ausgaben** – wer hat was bezahlt, wer schuldet wem wie viel, Ausgleichen mit möglichst wenigen Überweisungen
 - 📅 **Kalender** – kommt bald (gemeinsamer Google-Kalender)

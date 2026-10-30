@@ -9,7 +9,7 @@ function daysAgo(n) {
 
 export function createDemoBackend() {
   const user = { uid: 'demo-lukas', email: 'lukas@beispiel.de', displayName: 'Lukas' };
-  const all = ['lukas', 'julian', 'jana'];
+  const all = ['jana', 'julian', 'lukas'];
   const created = (n) => new Date(Date.now() - n * 86400000);
 
   const store = {

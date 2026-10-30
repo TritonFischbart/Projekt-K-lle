@@ -63,7 +63,7 @@ Voraussetzung: Mein Code ist im Haupt-Zweig `main` angekommen (das erledigen wir
 
 1. Link öffnen → **„Mit Google anmelden“**.
 2. Beim ersten Mal fragt die Seite **„Wer bist du?“** → deinen Namen antippen.
-3. Link an Julian und Jana schicken – die machen dasselbe.
+3. Link an Jul und Jana schicken – die machen dasselbe.
 
 **Als App auf den Home-Bildschirm (iPhone/iPad):** In Safari unten auf
 **Teilen** (Quadrat mit Pfeil) → **„Zum Home-Bildschirm“**.
