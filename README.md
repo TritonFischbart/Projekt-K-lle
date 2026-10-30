@@ -4,7 +4,7 @@ Die WG-Website von Jana, Jul und Lukas.
 
 - 💶 **Ausgaben** – wer hat was bezahlt, wer schuldet wem wie viel, Ausgleichen mit möglichst wenigen Überweisungen
 - 📅 **Kalender** – kommt bald (gemeinsamer Google-Kalender)
-- 🧹 **Putzplan** – kommt bald
+- 🧹 **Putzplan** – Bad, Küche, Böden & Müll; wechselt jede Woche, mit Erledigt-Haken und „Ich übernehme“
 
 Einrichtung: siehe [ANLEITUNG.md](ANLEITUNG.md).
 Ausprobieren ohne Einrichtung: die Website mit `?demo` am Ende der Adresse öffnen.
@@ -17,7 +17,8 @@ Ausprobieren ohne Einrichtung: die Website mit `?demo` am Ende der Adresse öffn
 | `css/style.css` | Aussehen (Farben, Abstände) |
 | `js/app.js` | Bedienung und Anzeige |
 | `js/money.js` | Rechnen: Aufteilen, Kontostände, Ausgleichs-Vorschlag |
-| `js/config.js` | Namen und Kategorien |
+| `js/chores.js` | Putzplan: Wochen und wer dran ist |
+| `js/config.js` | Namen, Kategorien und Putz-Aufgaben |
 | `js/firebase-config.js` | Verbindungsdaten zu Firebase |
 | `js/firebase.js` | Anmeldung und gemeinsame Datenbank |
 | `js/demo.js` | Demo-Modus mit Beispieldaten |

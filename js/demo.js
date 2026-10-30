@@ -1,6 +1,8 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
+import { weekKey } from './chores.js?v=3';
+
 function daysAgo(n) {
   const d = new Date();
   d.setDate(d.getDate() - n);
@@ -30,7 +32,12 @@ export function createDemoBackend() {
     settlements: [
       { id: 's1', createdAt: created(28), createdBy: 'jana', expenseCount: 2, totalCents: 5450 },
     ],
+    chores: [],
   };
+
+  // Putzplan-Beispiel: In dieser Woche hat schon jemand eine Aufgabe erledigt.
+  const key = weekKey(new Date());
+  store.chores.push({ id: `${key}_kueche`, week: key, chore: 'kueche', assignee: 'jana', doneBy: 'jana', doneAt: new Date() });
 
   const listeners = {};
   let userCallbacks = [];

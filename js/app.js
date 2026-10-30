@@ -1,8 +1,11 @@
 // Hauptprogramm: Anmeldung, Anzeige und Bedienung der Website.
 
-import { PEOPLE, CATEGORIES } from './config.js';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js';
-import { firebaseConfig } from './firebase-config.js';
+// Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
+// damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=3';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=3';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=3';
+import { firebaseConfig } from './firebase-config.js?v=3';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -14,6 +17,8 @@ const state = {
   expenses: [],
   payments: [],
   settlements: [],
+  chores: {},
+  choreWeekOffset: 0,
   tab: 'ausgaben',
   editingId: null,
 };
@@ -95,9 +100,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js')).createDemoBackend();
+      backend = (await import('./demo.js?v=3')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=3')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -125,9 +130,10 @@ function handleUser(user) {
     state.members = Object.fromEntries(docs.map((d) => [d.id, d]));
     route();
   });
-  listen('expenses', (docs) => { state.expenses = docs; renderAusgaben(); });
-  listen('payments', (docs) => { state.payments = docs; renderAusgaben(); });
-  listen('settlements', (docs) => { state.settlements = docs; renderAusgaben(); });
+  listen('expenses', (docs) => { state.expenses = docs; renderAll(); });
+  listen('payments', (docs) => { state.payments = docs; renderAll(); });
+  listen('settlements', (docs) => { state.settlements = docs; renderAll(); });
+  listen('chores', (docs) => { state.chores = Object.fromEntries(docs.map((d) => [d.id, d])); renderAll(); });
 }
 
 function listen(name, callback) {
@@ -150,7 +156,7 @@ function route() {
       renderHeader();
       switchTab(state.tab);
     }
-    renderAusgaben();
+    renderAll();
     return;
   }
 
@@ -215,6 +221,15 @@ function switchTab(tab) {
   window.scrollTo(0, 0);
 }
 
+function renderAll() {
+  if (!state.me) return;
+  renderAusgaben();
+  renderPutzplan();
+  const open = myOpenChores().length;
+  const tabButton = document.querySelector('.tabbar [data-tab=putzplan]');
+  tabButton.classList.toggle('has-badge', open > 0);
+}
+
 // ---------- Ausgaben anzeigen ----------
 
 function renderAusgaben() {
@@ -227,6 +242,7 @@ function renderAusgaben() {
   const transfers = suggestTransfers(balances, PERSON_IDS);
 
   $('#tab-ausgaben').innerHTML = [
+    choreBanner(),
     heroCard(balances[state.me]),
     balancesCard(balances),
     transfersCard(transfers, expenses.length + payments.length > 0),
@@ -376,6 +392,180 @@ function historyCard(openIds) {
   return `<section class="card"><h2>Frühere Abrechnungen</h2>${items}</section>`;
 }
 
+// ---------- Putzplan ----------
+
+// Alle Aufgaben einer Woche mit der Person, die (nach Tausch) dran ist.
+function weekChores(monday) {
+  const key = weekKey(monday);
+  const idx = weekIndex(monday);
+  return CHORES.map((chore, i) => {
+    const docId = `${key}_${chore.id}`;
+    const saved = state.chores[docId];
+    const planned = defaultAssignee(PERSON_IDS, i, idx);
+    return {
+      chore,
+      docId,
+      week: key,
+      planned,
+      assignee: saved?.assignee ?? planned,
+      doneBy: saved?.doneBy ?? null,
+      saved,
+    };
+  });
+}
+
+const thisMonday = () => mondayOf(new Date());
+const myOpenChores = () => weekChores(thisMonday()).filter((c) => c.assignee === state.me && !c.doneBy);
+
+function choreBanner() {
+  const open = myOpenChores();
+  if (!open.length) return '';
+  return `
+    <button class="card banner" data-action="tab" data-tab="putzplan">
+      <span class="banner-icon" aria-hidden="true">${open[0].chore.icon}</span>
+      <span class="banner-text">Diese Woche bist du dran mit:<strong>${open.map((c) => esc(c.chore.name)).join(' & ')}</strong></span>
+      <span class="banner-arrow" aria-hidden="true">›</span>
+    </button>`;
+}
+
+function weekTitle(offset, monday) {
+  if (offset === 0) return 'Diese Woche';
+  if (offset === 1) return 'Nächste Woche';
+  if (offset === -1) return 'Letzte Woche';
+  return `KW ${isoWeek(monday).week}`;
+}
+
+function weekRange(monday) {
+  const opts = { day: 'numeric', month: 'short' };
+  return `KW ${isoWeek(monday).week} · ${monday.toLocaleDateString('de-DE', opts)} – ${addDays(monday, 6).toLocaleDateString('de-DE', opts)}`;
+}
+
+function saveChore(c, changes) {
+  backend.set('chores', c.docId, {
+    week: c.week,
+    chore: c.chore.id,
+    assignee: c.assignee,
+    doneBy: c.doneBy,
+    doneAt: c.saved?.doneAt ?? null,
+    ...changes,
+    updatedBy: state.me,
+    updatedAt: backend.now(),
+  }).catch(showError);
+}
+
+function findChore(docId) {
+  const monday = addDays(thisMonday(), state.choreWeekOffset * 7);
+  return weekChores(monday).find((c) => c.docId === docId);
+}
+
+function choreDone(docId) {
+  const c = findChore(docId);
+  if (!c) return;
+  saveChore(c, { doneBy: state.me, doneAt: backend.now() });
+  toast(`${c.chore.name} erledigt – danke! 💪`);
+}
+
+function choreUndo(docId) {
+  const c = findChore(docId);
+  if (c) saveChore(c, { doneBy: null, doneAt: null });
+}
+
+function choreTake(docId) {
+  const c = findChore(docId);
+  if (!c || !confirm(`Übernimmst du ${c.chore.name} für ${personName(c.assignee)}?`)) return;
+  saveChore(c, { assignee: state.me });
+  toast(`Du hast ${c.chore.name} übernommen ✓`);
+}
+
+function choreGiveBack(docId) {
+  const c = findChore(docId);
+  if (!c || !confirm(`${c.chore.name} wieder an ${personName(c.planned)} zurückgeben?`)) return;
+  saveChore(c, { assignee: c.planned });
+}
+
+function choreItem(c, offset) {
+  const mine = c.assignee === state.me;
+  const swapped = c.assignee !== c.planned;
+  const who = `
+    <span class="chore-who">
+      ${avatar(c.assignee, true)}
+      <span>${mine ? 'Du' : esc(personName(c.assignee))}${swapped ? ` <em>(übernommen von ${esc(personName(c.planned))})</em>` : ''}</span>
+    </span>`;
+
+  let actions = '';
+  if (c.doneBy) {
+    actions = `
+      <span class="done-label">✓ erledigt${c.doneBy !== c.assignee ? ` von ${esc(personName(c.doneBy))}` : ''}</span>
+      <button class="link-btn" data-action="chore-undo" data-id="${c.docId}">Rückgängig</button>`;
+  } else {
+    if (mine && offset <= 0) actions += `<button class="btn small primary" data-action="chore-done" data-id="${c.docId}">Erledigt ✓</button>`;
+    if (!mine) actions += `<button class="btn small" data-action="chore-take" data-id="${c.docId}">Ich übernehme</button>`;
+    if (swapped && (mine || c.planned === state.me)) actions += `<button class="link-btn" data-action="chore-giveback" data-id="${c.docId}">Zurückgeben</button>`;
+  }
+
+  return `
+    <li class="chore${c.doneBy ? ' done' : ''}${mine ? ' mine' : ''}">
+      <span class="entry-icon" aria-hidden="true">${c.doneBy ? '✅' : c.chore.icon}</span>
+      <span class="entry-main">
+        <span class="entry-title">${esc(c.chore.name)}</span>
+        <span class="entry-sub">${esc(c.chore.details)}</span>
+        ${who}
+      </span>
+      <span class="chore-actions">${actions}</span>
+    </li>`;
+}
+
+function choreHero() {
+  const all = weekChores(thisMonday()).filter((c) => c.assignee === state.me);
+  const open = all.filter((c) => !c.doneBy);
+  if (!all.length) {
+    return '<section class="card hero even"><p class="hero-label">Diese Woche hast du keine Aufgabe</p><p class="hero-amount">😎</p></section>';
+  }
+  if (!open.length) {
+    return '<section class="card hero even"><p class="hero-label">Deine Aufgaben für diese Woche sind erledigt</p><p class="hero-amount">💪</p></section>';
+  }
+  return `
+    <section class="card hero plus">
+      <p class="hero-label">Diese Woche bist du dran mit</p>
+      <p class="hero-amount chore-hero">${open.map((c) => `${c.chore.icon} ${esc(c.chore.name)}`).join('<br>')}</p>
+    </section>`;
+}
+
+function upcomingCard() {
+  const rows = [1, 2, 3, 4].map((n) => {
+    const monday = addDays(thisMonday(), n * 7);
+    const cells = weekChores(monday).map((c) => `
+      <span class="plan-cell">${avatar(c.assignee, true)}<span>${esc(personName(c.assignee))}</span></span>`).join('');
+    return `<li class="plan-row"><span class="plan-week">KW ${isoWeek(monday).week}</span>${cells}</li>`;
+  }).join('');
+  const head = CHORES.map((c) => `<span class="plan-cell head">${c.icon} ${esc(c.name)}</span>`).join('');
+  return `
+    <section class="card">
+      <h2>Die nächsten Wochen</h2>
+      <ul class="plan"><li class="plan-row plan-head"><span class="plan-week"></span>${head}</li>${rows}</ul>
+    </section>`;
+}
+
+function renderPutzplan() {
+  const offset = state.choreWeekOffset;
+  const monday = addDays(thisMonday(), offset * 7);
+  $('#tab-putzplan').innerHTML = `
+    ${choreHero()}
+    <section class="card">
+      <div class="week-nav">
+        <button class="icon-btn" data-action="week" data-step="-1" aria-label="Woche zurück">‹</button>
+        <button class="week-title" data-action="week" data-step="0">
+          <strong>${weekTitle(offset, monday)}</strong>
+          <small>${weekRange(monday)}</small>
+        </button>
+        <button class="icon-btn" data-action="week" data-step="1" aria-label="Woche vor">›</button>
+      </div>
+      <ul class="chores">${weekChores(monday).map((c) => choreItem(c, offset)).join('')}</ul>
+      <p class="hint">Jemand hat spontan Zeit? Mit „Ich übernehme“ könnt ihr Aufgaben tauschen.</p>
+    </section>
+    ${upcomingCard()}`;
+}
+
 // ---------- Formular ----------
 
 function chip(name, type, value, label, checked) {
@@ -523,6 +713,16 @@ function onClick(event) {
     case 'mark-paid': markPaid(el.dataset.from, el.dataset.to, Number(el.dataset.amount)); break;
     case 'undo-payment': undoPayment(el.dataset.id); break;
     case 'settle-all': settleAll(); break;
+    case 'chore-done': choreDone(el.dataset.id); break;
+    case 'chore-undo': choreUndo(el.dataset.id); break;
+    case 'chore-take': choreTake(el.dataset.id); break;
+    case 'chore-giveback': choreGiveBack(el.dataset.id); break;
+    case 'week': {
+      const step = Number(el.dataset.step);
+      state.choreWeekOffset = step === 0 ? 0 : state.choreWeekOffset + step;
+      renderPutzplan();
+      break;
+    }
     default: break;
   }
 }
