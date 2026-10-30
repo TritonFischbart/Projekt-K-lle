@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f7d4f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Kölle">
+  <title>Projekt Kölle</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <!-- Ladebildschirm -->
+  <div id="screen-loading" class="screen center">
+    <div class="spinner" aria-label="Lädt …"></div>
+  </div>
+
+  <!-- Firebase ist noch nicht eingerichtet -->
+  <div id="screen-setup" class="screen center" hidden>
+    <div class="welcome">
+      <img src="icons/icon.svg" alt="" class="logo">
+      <h1>Projekt Kölle</h1>
+      <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
+      <a class="btn primary" href="?demo">Demo ansehen</a>
+    </div>
+  </div>
+
+  <!-- Anmelden -->
+  <div id="screen-login" class="screen center" hidden>
+    <div class="welcome">
+      <img src="icons/icon.svg" alt="" class="logo">
+      <h1>Projekt Kölle</h1>
+      <p>Die WG-Seite von Lukas, Julian und Jana.</p>
+      <button class="btn primary" data-action="login">Mit Google anmelden</button>
+      <p class="error" id="login-error"></p>
+    </div>
+  </div>
+
+  <!-- Kein Zugang -->
+  <div id="screen-noaccess" class="screen center" hidden>
+    <div class="welcome">
+      <h1>Kein Zugang 🔒</h1>
+      <p id="noaccess-text"></p>
+      <button class="btn outline" data-action="logout">Abmelden</button>
+    </div>
+  </div>
+
+  <!-- Erste Anmeldung: Wer bist du? -->
+  <div id="screen-pick" class="screen center" hidden>
+    <div class="welcome">
+      <h1>Hallo! Wer bist du?</h1>
+      <p>Das musst du nur einmal auswählen.</p>
+      <div id="pick-list" class="pick-list"></div>
+    </div>
+  </div>
+
+  <!-- Die eigentliche App -->
+  <div id="screen-app" class="screen" hidden>
+    <header class="topbar">
+      <div class="brand"><img src="icons/icon.svg" alt=""> Projekt Kölle</div>
+      <button class="me-button" id="me-button" data-action="logout"></button>
+    </header>
+    <div id="demo-banner" class="demo-banner" hidden>Demo-Modus – nichts wird gespeichert</div>
+
+    <main>
+      <section id="tab-ausgaben" class="tab"></section>
+
+      <section id="tab-kalender" class="tab" hidden>
+        <div class="card soon">
+          <div class="soon-icon">📅</div>
+          <h2>Kalender</h2>
+          <p>Hier erscheinen bald eure gemeinsamen WG-Termine aus dem Google-Kalender.</p>
+        </div>
+      </section>
+
+      <section id="tab-putzplan" class="tab" hidden>
+        <div class="card soon">
+          <div class="soon-icon">🧹</div>
+          <h2>Putzplan</h2>
+          <p>Hier kommt bald euer Putzplan hin – mit wöchentlichem Wechsel und Tausch-Option.</p>
+        </div>
+      </section>
+    </main>
+
+    <button class="fab" data-action="add-expense"><span aria-hidden="true">＋</span> Ausgabe</button>
+
+    <nav class="tabbar">
+      <button data-action="tab" data-tab="ausgaben" aria-current="page"><span class="tab-icon">💶</span>Ausgaben</button>
+      <button data-action="tab" data-tab="kalender"><span class="tab-icon">📅</span>Kalender</button>
+      <button data-action="tab" data-tab="putzplan"><span class="tab-icon">🧹</span>Putzplan</button>
+    </nav>
+  </div>
+
+  <!-- Formular: Ausgabe eintragen / bearbeiten -->
+  <dialog id="expense-dialog" class="sheet">
+    <form id="expense-form" novalidate>
+      <div class="sheet-head">
+        <h2 id="form-title">Neue Ausgabe</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+
+      <label class="field">
+        <span class="label">Betrag</span>
+        <span class="amount-input">
+          <input id="f-amount" inputmode="decimal" autocomplete="off" placeholder="0,00">
+          <span>€</span>
+        </span>
+      </label>
+
+      <label class="field">
+        <span class="label">Wofür?</span>
+        <input id="f-desc" maxlength="80" autocomplete="off" placeholder="z. B. Einkauf Rewe">
+      </label>
+
+      <fieldset class="field">
+        <legend class="label">Kategorie</legend>
+        <div class="chips" id="f-category"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="label">Wer hat bezahlt?</legend>
+        <div class="chips" id="f-paidby"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="label">Für wen?</legend>
+        <div class="chips" id="f-split"></div>
+        <p class="hint" id="f-split-hint"></p>
+      </fieldset>
+
+      <label class="field">
+        <span class="label">Datum</span>
+        <input type="date" id="f-date">
+      </label>
+
+      <p class="error" id="f-error"></p>
+
+      <div class="form-actions">
+        <button type="button" class="btn danger" id="f-delete" data-action="delete-expense">Löschen</button>
+        <button type="submit" class="btn primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
