@@ -11,8 +11,8 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/style.css?v=6">
-  <script type="module" src="js/app.js?v=6"></script>
+  <link rel="stylesheet" href="css/style.css?v=7">
+  <script type="module" src="js/app.js?v=7"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -184,6 +184,18 @@
         <button type="submit" class="btn primary">Speichern</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- Auswahl: Kategorie eines Einkaufs ändern -->
+  <dialog id="shopcat-dialog" class="sheet">
+    <div class="sheet-form">
+      <div class="sheet-head">
+        <h2 id="shopcat-title">Kategorie</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <div class="chips" id="shopcat-list"></div>
+      <p class="hint">Die App merkt sich deine Wahl für das nächste Mal.</p>
+    </div>
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

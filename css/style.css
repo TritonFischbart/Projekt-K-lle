@@ -473,3 +473,14 @@ main {
 .soon .btn { justify-self: center; margin-top: 8px; }
 a.btn.full { width: 100%; }
 #tab-kalender > .hint { margin: -6px 0 0; text-align: center; }
+
+/* ---------- Einkauf: Kategorien ---------- */
+.shop-cat { margin: 14px 0 2px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.shop-cat:first-of-type { margin-top: 0; }
+.shop-row .icon-btn.small[data-action="shop-category"] { background: none; font-size: 1rem; }
+.chip-btn {
+  padding: 9px 14px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg);
+  font-weight: 600; font-size: 0.95rem;
+}
+.chip-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
