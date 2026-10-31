@@ -72,3 +72,36 @@ export function guessAreaIcon(name) {
 
 // Auswahl zum Antippen im Bearbeiten-Fenster
 export const AREA_ICON_CHOICES = ['🛁', '🚿', '🚽', '🍳', '🍽️', '❄️', '🧹', '🧽', '🧼', '🪣', '🗑️', '♻️', '🍾', '📦', '🪟', '🧺', '🪴', '🌿', '🛒', '🪶', '🛏️', '🚪', '🐾', '✨'];
+
+// ---------- Häufigkeit und gerechte Verteilung ----------
+
+// every: 1 = jede Woche, 2 = alle 2 Wochen, 4 = alle 4 Wochen.
+// Die Bereiche werden über die Wochen verteilt (Bereich 1 in geraden, Bereich 2 in ungeraden …),
+// damit nicht alle seltenen Aufgaben in dieselbe Woche fallen.
+export function isDueInWeek(every, areaIndex, weekIdx) {
+  const n = Math.max(1, Number(every) || 1);
+  return (((weekIdx - areaIndex) % n) + n) % n === 0;
+}
+
+// In wie vielen Wochen ist der Bereich wieder dran? (0 = diese Woche)
+export function weeksUntilDue(every, areaIndex, weekIdx) {
+  for (let d = 0; d < 8; d += 1) if (isDueInWeek(every, areaIndex, weekIdx + d)) return d;
+  return 0;
+}
+
+// Plan einer Woche: nur fällige Bereiche, der Reihe nach auf die Anwesenden verteilt.
+// So hat jede Person höchstens eine Aufgabe mehr als die anderen, und wer
+// "die Extra-Aufgabe" bekommt, wechselt jede Woche.
+// Ergebnis: [{ area, index, planned, base }] – base = wer ohne Abwesenheiten dran wäre.
+export function planWeek(peopleIds, presentIds, areas, weekIdx) {
+  const pool = presentIds.length ? presentIds : peopleIds;
+  const mod = (a, n) => ((a % n) + n) % n;
+  return areas
+    .map((area, index) => ({ area, index }))
+    .filter(({ area, index }) => isDueInWeek(area.every, index, weekIdx))
+    .map((item, k) => {
+      const base = peopleIds[mod(weekIdx + k, peopleIds.length)];
+      const planned = pool.length === peopleIds.length ? base : pool[mod(weekIdx + k, pool.length)];
+      return { ...item, base, planned };
+    });
+}

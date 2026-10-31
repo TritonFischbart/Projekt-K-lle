@@ -2,20 +2,20 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=17';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=17';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=18';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=18';
 import {
-  mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee,
+  mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=17';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=17';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=17';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=17';
-import { compressImage } from './images.js?v=17';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=17';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=17';
-import { toPlain, expensesCsv } from './export.js?v=17';
-import { firebaseConfig } from './firebase-config.js?v=17';
+} from './chores.js?v=18';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=18';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=18';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=18';
+import { compressImage } from './images.js?v=18';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=18';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=18';
+import { toPlain, expensesCsv } from './export.js?v=18';
+import { firebaseConfig } from './firebase-config.js?v=18';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -145,9 +145,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=17')).createDemoBackend();
+      backend = (await import('./demo.js?v=18')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=17')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=18')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -562,17 +562,18 @@ function historyCard(openIds) {
 const choreAreas = () => state.areas ?? CHORES;
 
 // Alle Aufgaben einer Woche mit der Person, die (nach Tausch) dran ist.
+const EVERY_LABELS = { 1: 'jede Woche', 2: 'alle 2 Wochen', 4: 'alle 4 Wochen' };
+
+// Alle in dieser Woche fälligen Aufgaben mit der Person, die (nach Tausch) dran ist.
 function weekChores(monday) {
   const key = weekKey(monday);
   const idx = weekIndex(monday);
   // Wer in dieser Woche (fast) die ganze Zeit weg ist, bekommt keine Aufgabe.
   const present = PERSON_IDS.filter((id) => !isAwayForWeek(state.absences, id, monday));
-  return choreAreas().map((chore, i) => {
+  return planWeek(PERSON_IDS, present, choreAreas(), idx).map(({ area: chore, base, planned }) => {
     const docId = `${key}_${chore.id}`;
     const saved = state.chores[docId];
-    const base = defaultAssignee(PERSON_IDS, i, idx);
-    const away = present.length && !present.includes(base);
-    const planned = away ? present[(i + idx) % present.length] : base;
+    const away = !present.includes(base);
     return {
       chore,
       docId,
@@ -677,7 +678,7 @@ function choreItem(c, offset) {
       <span class="entry-icon" aria-hidden="true">${c.doneBy ? '✅' : c.chore.icon}</span>
       <span class="entry-main">
         <span class="entry-title">${esc(c.chore.name)}</span>
-        <span class="entry-sub">${esc(c.chore.details)}</span>
+        <span class="entry-sub">${esc(c.chore.details)}${(c.chore.every ?? 1) > 1 ? ` · ${EVERY_LABELS[c.chore.every] ?? ''}` : ''}</span>
         ${who}
       </span>
       <span class="chore-actions">${actions}</span>
@@ -700,12 +701,31 @@ function choreHero() {
     </section>`;
 }
 
+// "Diese Woche nicht dran: 🍾 Altglas (wieder in KW 47)"
+function notDueLine(monday) {
+  const idx = weekIndex(monday);
+  const due = new Set(weekChores(monday).map((c) => c.chore.id));
+  const rest = choreAreas()
+    .map((area, i) => ({ area, i }))
+    .filter(({ area }) => !due.has(area.id));
+  if (!rest.length) return '';
+  return `<p class="not-due">Diese Woche nicht dran: ${rest.map(({ area, i }) => {
+    const next = addDays(monday, weeksUntilDue(area.every, i, idx) * 7);
+    return `${area.icon} ${esc(area.name)} <small>(wieder in KW ${isoWeek(next).week})</small>`;
+  }).join(', ')}</p>`;
+}
+
 function upcomingCard() {
   const columns = `style="grid-template-columns: 52px repeat(${choreAreas().length}, minmax(0, 1fr))"`;
   const rows = [1, 2, 3, 4].map((n) => {
     const monday = addDays(thisMonday(), n * 7);
-    const cells = weekChores(monday).map((c) => `
-      <span class="plan-cell">${avatar(c.assignee, true)}<span>${esc(personName(c.assignee))}</span></span>`).join('');
+    const byArea = Object.fromEntries(weekChores(monday).map((c) => [c.chore.id, c]));
+    const cells = choreAreas().map((area) => {
+      const c = byArea[area.id];
+      return c
+        ? `<span class="plan-cell">${avatar(c.assignee, true)}<span>${esc(personName(c.assignee))}</span></span>`
+        : '<span class="plan-cell off">–</span>';
+    }).join('');
     return `<li class="plan-row" ${columns}><span class="plan-week">KW ${isoWeek(monday).week}</span>${cells}</li>`;
   }).join('');
   const head = choreAreas().map((c) => `<span class="plan-cell head">${c.icon} ${esc(c.name)}</span>`).join('');
@@ -731,6 +751,7 @@ function renderPutzplan() {
         <button class="icon-btn" data-action="week" data-step="1" aria-label="Woche vor">›</button>
       </div>
       <ul class="chores">${weekChores(monday).map((c) => choreItem(c, offset)).join('')}</ul>
+      ${notDueLine(monday)}
       <p class="hint">Jemand hat spontan Zeit? Mit „Ich übernehme“ könnt ihr Aufgaben tauschen.</p>
     </section>
     <button class="btn outline full" data-action="edit-areas">✏️ Bereiche bearbeiten</button>
@@ -750,6 +771,9 @@ function areaRow(area) {
       <div class="area-fields">
         <input class="area-name" value="${esc(area.name)}" maxlength="30" placeholder="Name, z. B. Bad">
         <input class="area-details" value="${esc(area.details)}" maxlength="120" placeholder="Was gehört dazu?">
+        <select class="area-every" aria-label="Wie oft?">${Object.entries(EVERY_LABELS).map(([value, label]) => `
+          <option value="${value}"${Number(value) === (Number(area.every) || 1) ? ' selected' : ''}>🔁 ${label}</option>`).join('')}
+        </select>
       </div>
       <button type="button" class="icon-btn" data-action="remove-area" aria-label="Bereich löschen">✕</button>
     </div>`;
@@ -800,6 +824,7 @@ function onSubmitAreas(event) {
     icon: row.querySelector('.area-icon').dataset.icon || DEFAULT_AREA_ICON,
     name: row.querySelector('.area-name').value.trim(),
     details: row.querySelector('.area-details').value.trim(),
+    every: Number(row.querySelector('.area-every').value) || 1,
   }));
   const problem = !areas.length ? 'Es muss mindestens einen Bereich geben.'
     : areas.some((a) => !a.name) ? 'Bitte jedem Bereich einen Namen geben.'

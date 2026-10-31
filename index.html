@@ -8,11 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kölle">
   <title>Projekt Kölle</title>
-  <link rel="icon" href="icons/icon.svg?v=17" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=17">
-  <link rel="manifest" href="manifest.webmanifest?v=17">
-  <link rel="stylesheet" href="css/style.css?v=17">
-  <script type="module" src="js/app.js?v=17"></script>
+  <link rel="icon" href="icons/icon.svg?v=18" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=18">
+  <link rel="manifest" href="manifest.webmanifest?v=18">
+  <link rel="stylesheet" href="css/style.css?v=18">
+  <script type="module" src="js/app.js?v=18"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -23,7 +23,7 @@
   <!-- Firebase ist noch nicht eingerichtet -->
   <div id="screen-setup" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=17" alt="" class="logo">
+      <img src="icons/icon.svg?v=18" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
       <a class="btn primary" href="?demo">Demo ansehen</a>
@@ -33,7 +33,7 @@
   <!-- Anmelden -->
   <div id="screen-login" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=17" alt="" class="logo">
+      <img src="icons/icon.svg?v=18" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p>Die WG-Seite von Jana, Jul und Lukas.</p>
       <button class="btn primary" data-action="login">Mit Google anmelden</button>
@@ -62,7 +62,7 @@
   <!-- Die eigentliche App -->
   <div id="screen-app" class="screen" hidden>
     <header class="topbar">
-      <div class="brand"><img src="icons/icon.svg?v=17" alt=""> Projekt Kölle</div>
+      <div class="brand"><img src="icons/icon.svg?v=18" alt=""> Projekt Kölle</div>
       <button class="me-button" id="me-button" data-action="logout"></button>
     </header>
     <div id="demo-banner" class="demo-banner" hidden>Demo-Modus – nichts wird gespeichert</div>
@@ -164,7 +164,7 @@
         <h2>Putzplan-Bereiche</h2>
         <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
       </div>
-      <p class="hint">Änderungen gelten sofort für alle. Die Bereiche werden der Reihe nach verteilt und wechseln jede Woche.</p>
+      <p class="hint">Änderungen gelten sofort für alle. Jede Woche werden die fälligen Bereiche gerecht verteilt – niemand hat mehr als eine Aufgabe mehr als die anderen.</p>
       <div id="areas-list" class="areas-list"></div>
       <button type="button" class="btn outline" data-action="add-area">＋ Bereich hinzufügen</button>
       <p class="error" id="areas-error"></p>

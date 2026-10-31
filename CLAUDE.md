@@ -67,7 +67,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `js/app.js` | Hauptprogramm: Anmeldung, Anzeige, Bedienung aller Bereiche |
 | `js/config.js` | Personen (Reihenfolge/Farben), Ausgaben-Kategorien, Standard-Putzbereiche |
 | `js/money.js` | Geld in Cent, Aufteilen, Kontostände, Ausgleichs-Vorschlag |
-| `js/chores.js` | Putzplan: Wochen (ISO-KW, ab Montag), Rotation |
+| `js/chores.js` | Putzplan: Wochen (ISO-KW, ab Montag), Häufigkeit, gerechte Verteilung, Symbole |
 | `js/calendar.js` | Google-Termine abholen und nach Tagen gruppieren |
 | `js/shopcats.js` | Einkaufs-Kategorien (Supermarkt-Reihenfolge) + automatische Zuordnung |
 | `js/recurring.js` | Daueraufträge: welche Monate fällig sind |
@@ -101,7 +101,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `payments` | Abgehakte Überweisungen: `from, to, amountCents, date, settlementId` |
 | `settlements` | Abrechnungen („Alles ausgeglichen“): `expenseCount, totalCents, createdAt` |
 | `chores/{KW}_{bereich}` | Putzplan-Status pro Woche: `assignee, doneBy, doneAt` |
-| `settings/putzplan` | In der App bearbeitete Putzbereiche (`areas[]`) |
+| `settings/putzplan` | In der App bearbeitete Putzbereiche (`areas[]`: `id, name, icon, details, every`) |
 | `settings/kalender` | `calendarId`, `apiKey` |
 | `shopping` | Einkaufsliste: `name, category, addedBy, doneBy, doneAt` |
 | `favorites/{name}` | Wie oft etwas gekauft wurde + gemerkte Kategorie (Schnellauswahl) |
@@ -176,7 +176,13 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   per Antippen aus einer Auswahl ändern. Bereiche mit dem alten Standard-Symbol 🧽 bekommen
   beim Öffnen von „Bereiche bearbeiten“ automatisch ein passendes. Löschen-Knopf ist ✕
   (nicht 🗑, sonst Verwechslung mit Müll).
-- Wechsel **jede Woche** (Montag), Rotation der Reihe nach.
+- **Häufigkeit pro Bereich** (`every`: 1 = jede Woche, 2 = alle 2 Wochen, 4 = alle 4 Wochen),
+  einstellbar unter „Bereiche bearbeiten“. Nicht fällige Bereiche erscheinen als
+  „Diese Woche nicht dran: … (wieder in KW …)“ und in der Vorschau als „–“.
+- **Gerechte Verteilung** (`planWeek` in `chores.js`): Jede Woche werden nur die fälligen
+  Bereiche der Reihe nach verteilt (Montag ist Wochenwechsel) – niemand hat mehr als eine
+  Aufgabe mehr als die anderen, wer die Extra-Aufgabe bekommt, wechselt. Bei drei
+  wöchentlichen Bereichen ist das genau die alte Rotation (alte Daten passen).
 - „Erledigt ✓“, „Ich übernehme“ (spontan tauschen), „Zurückgeben“.
 - Erinnerungen vorerst nur als Hinweis in der App (roter Punkt, Startseite).
 - **Urlaubs-Modus**: Wer in einer Woche mindestens 4 Tage weg ist, bekommt keine
