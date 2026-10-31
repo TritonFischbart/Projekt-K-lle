@@ -8,11 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kölle">
   <title>Projekt Kölle</title>
-  <link rel="icon" href="icons/icon.svg?v=18" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=18">
-  <link rel="manifest" href="manifest.webmanifest?v=18">
-  <link rel="stylesheet" href="css/style.css?v=18">
-  <script type="module" src="js/app.js?v=18"></script>
+  <link rel="icon" href="icons/icon.svg?v=19" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=19">
+  <link rel="manifest" href="manifest.webmanifest?v=19">
+  <link rel="stylesheet" href="css/style.css?v=19">
+  <script type="module" src="js/app.js?v=19"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -23,7 +23,7 @@
   <!-- Firebase ist noch nicht eingerichtet -->
   <div id="screen-setup" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=18" alt="" class="logo">
+      <img src="icons/icon.svg?v=19" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
       <a class="btn primary" href="?demo">Demo ansehen</a>
@@ -33,7 +33,7 @@
   <!-- Anmelden -->
   <div id="screen-login" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=18" alt="" class="logo">
+      <img src="icons/icon.svg?v=19" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p>Die WG-Seite von Jana, Jul und Lukas.</p>
       <button class="btn primary" data-action="login">Mit Google anmelden</button>
@@ -62,7 +62,7 @@
   <!-- Die eigentliche App -->
   <div id="screen-app" class="screen" hidden>
     <header class="topbar">
-      <div class="brand"><img src="icons/icon.svg?v=18" alt=""> Projekt Kölle</div>
+      <div class="brand"><img src="icons/icon.svg?v=19" alt=""> Projekt Kölle</div>
       <button class="me-button" id="me-button" data-action="logout"></button>
     </header>
     <div id="demo-banner" class="demo-banner" hidden>Demo-Modus – nichts wird gespeichert</div>
@@ -135,6 +135,10 @@
         <legend class="label">Für wen?</legend>
         <div class="chips" id="f-split"></div>
         <p class="hint" id="f-split-hint"></p>
+        <label class="uneven-toggle" id="f-uneven-row">
+          <input type="checkbox" id="f-uneven"> Ungleich aufteilen
+        </label>
+        <div class="shares" id="f-shares" hidden></div>
       </fieldset>
 
       <label class="field" id="f-date-row">
@@ -237,6 +241,22 @@
       <img id="viewer-img" alt="" data-action="image-zoom">
     </div>
     <p class="viewer-hint">Antippen zum Vergrößern</p>
+  </dialog>
+
+  <!-- Reihenfolge der Einkaufs-Kategorien -->
+  <dialog id="shoporder-dialog" class="sheet">
+    <form id="shoporder-form" class="sheet-form" novalidate>
+      <div class="sheet-head">
+        <h2>Reihenfolge im Laden</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <p class="hint">Sortiere die Kategorien so, wie ihr durch euren Supermarkt lauft. Gilt für alle.</p>
+      <ul class="order-list" id="shoporder-list"></ul>
+      <div class="form-actions">
+        <button type="button" class="btn outline" data-action="shoporder-reset">Standard</button>
+        <button type="submit" class="btn primary">Speichern</button>
+      </div>
+    </form>
   </dialog>
 
   <!-- Auswahl: Kategorie eines Einkaufs ändern -->

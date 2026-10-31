@@ -2,20 +2,20 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=18';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=18';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=19';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=19';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=18';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=18';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=18';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=18';
-import { compressImage } from './images.js?v=18';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=18';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=18';
-import { toPlain, expensesCsv } from './export.js?v=18';
-import { firebaseConfig } from './firebase-config.js?v=18';
+} from './chores.js?v=19';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=19';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=19';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=19';
+import { compressImage } from './images.js?v=19';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=19';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=19';
+import { toPlain, expensesCsv } from './export.js?v=19';
+import { firebaseConfig } from './firebase-config.js?v=19';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -40,6 +40,8 @@ const state = {
   monthOffset: 0,
   formMode: 'expense',
   pendingShopIds: [],
+  shareValues: {},
+  shopOrder: null,
   loaded: {},
   editingNote: null,
   noteImages: [],
@@ -145,9 +147,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=18')).createDemoBackend();
+      backend = (await import('./demo.js?v=19')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=18')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=19')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -188,6 +190,7 @@ function handleUser(user) {
     const plan = docs.find((d) => d.id === 'putzplan');
     state.areas = plan?.areas?.length ? plan.areas : null;
     state.backup = docs.find((d) => d.id === 'backup') ?? null;
+    state.shopOrder = docs.find((d) => d.id === 'einkauf')?.order ?? null;
     const kal = docs.find((d) => d.id === 'kalender');
     const config = kal?.calendarId && kal?.apiKey ? { calendarId: kal.calendarId, apiKey: kal.apiKey } : null;
     const changed = JSON.stringify(config) !== JSON.stringify(state.calendar.config);
@@ -492,12 +495,12 @@ function sortedEntries(expenses, payments) {
 
 function expenseRow(e, readonly) {
   const c = categoryOf(e.category);
-  const myShare = splitAmount(e.amountCents, e.splitAmong ?? [], PERSON_IDS)[state.me];
+  const myShare = expenseShares(e, PERSON_IDS)[state.me];
   const inner = `
     <span class="entry-icon" aria-hidden="true">${c.icon}</span>
     <span class="entry-main">
       <span class="entry-title">${e.recurringId ? '🔁 ' : ''}${esc(e.description)}</span>
-      <span class="entry-sub">${esc(personName(e.paidBy))} hat bezahlt · ${esc(forWhom(e.splitAmong ?? []))} · ${formatDate(e.date)}</span>
+      <span class="entry-sub">${esc(personName(e.paidBy))} hat bezahlt · ${esc(forWhom(e.splitAmong ?? []))}${e.shares ? ' (ungleich)' : ''} · ${formatDate(e.date)}</span>
     </span>
     <span class="entry-right">
       <span class="amount">${formatEuro(e.amountCents)}</span>
@@ -847,7 +850,7 @@ function renderEinkauf() {
   const done = state.shopping.filter((i) => i.doneBy)
     .sort((a, b) => toMillis(b.doneAt) - toMillis(a.doneAt));
 
-  const groups = SHOP_CATEGORIES
+  const groups = shopCategories()
     .map((cat) => ({ cat, items: open.filter((i) => shopCategoryOf(i) === cat.id) }))
     .filter((g) => g.items.length);
   const openList = open.length
@@ -884,7 +887,7 @@ function renderEinkauf() {
 
   $('#shop-list').innerHTML = `
     <section class="card">
-      <div class="card-head"><h2>Fehlt noch</h2>${open.length ? `<span class="total">${open.length}</span>` : ''}</div>
+      <div class="card-head"><h2>Fehlt noch</h2><button class="link-btn" data-action="shoporder-open">↕️ Reihenfolge</button></div>
       ${openList}
     </section>
     ${doneCard}`;
@@ -965,6 +968,48 @@ function onSubmitShopping(event) {
   input.value = '';
 }
 
+// Kategorien in der Reihenfolge eures Supermarkts (in der App einstellbar)
+function shopCategories() {
+  if (!state.shopOrder?.length) return SHOP_CATEGORIES;
+  const rank = (id) => {
+    const i = state.shopOrder.indexOf(id);
+    return i < 0 ? 999 : i;
+  };
+  return [...SHOP_CATEGORIES].sort((a, b) => rank(a.id) - rank(b.id));
+}
+
+function renderShopOrder(categories) {
+  $('#shoporder-list').innerHTML = categories.map((c, i) => `
+    <li class="order-row" data-id="${c.id}">
+      <span>${c.icon} ${esc(c.name)}</span>
+      <span>
+        <button type="button" class="icon-btn small" data-action="shoporder-move" data-step="-1" aria-label="Nach oben"${i === 0 ? ' disabled' : ''}>▲</button>
+        <button type="button" class="icon-btn small" data-action="shoporder-move" data-step="1" aria-label="Nach unten"${i === categories.length - 1 ? ' disabled' : ''}>▼</button>
+      </span>
+    </li>`).join('');
+}
+
+function currentOrderInDialog() {
+  const byId = Object.fromEntries(SHOP_CATEGORIES.map((c) => [c.id, c]));
+  return [...document.querySelectorAll('#shoporder-list .order-row')].map((row) => byId[row.dataset.id]);
+}
+
+function moveShopCategory(button) {
+  const list = currentOrderInDialog();
+  const i = list.findIndex((c) => c.id === button.closest('.order-row').dataset.id);
+  const j = i + Number(button.dataset.step);
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  renderShopOrder(list);
+}
+
+function onSubmitShopOrder(event) {
+  event.preventDefault();
+  backend.set('settings', 'einkauf', { order: currentOrderInDialog().map((c) => c.id), updatedBy: state.me, updatedAt: backend.now() }).catch(showError);
+  $('#shoporder-dialog').close();
+  toast('Reihenfolge gespeichert ✓');
+}
+
 // Kategorie eines Einkaufs: gespeichert, sonst geraten.
 function shopCategoryOf(item) {
   const id = item.category ?? guessCategory(item.name);
@@ -977,7 +1022,7 @@ function openShopCategory(id) {
   state.shopCatItem = id;
   const current = shopCategoryOf(item);
   $('#shopcat-title').textContent = `Kategorie für „${item.name}“`;
-  $('#shopcat-list').innerHTML = SHOP_CATEGORIES.map((c) => `
+  $('#shopcat-list').innerHTML = shopCategories().map((c) => `
     <button type="button" class="chip-btn${c.id === current ? ' active' : ''}" data-action="shop-setcat" data-cat="${c.id}">${c.icon} ${esc(c.name)}</button>`).join('');
   $('#shopcat-dialog').showModal();
 }
@@ -1188,13 +1233,20 @@ const NOTE_TEMPLATES = [
 ];
 
 function renderInfos() {
-  const notes = [...state.notes].sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt));
+  // Angeheftete Notizen zuerst
+  const notes = [...state.notes].sort((a, b) => (Boolean(b.pinned) - Boolean(a.pinned)) || (toMillis(a.createdAt) - toMillis(b.createdAt)));
   const existing = new Set(notes.map((n) => n.title));
   const templates = NOTE_TEMPLATES.filter((t) => !existing.has(t.title));
 
   const noteCards = notes.map((n) => `
-    <article class="card note">
-      <div class="card-head"><h2>${esc(n.title)}</h2><button class="link-btn" data-action="note-edit" data-id="${esc(n.id)}">Bearbeiten</button></div>
+    <article class="card note${n.pinned ? ' pinned' : ''}">
+      <div class="card-head">
+        <h2>${n.pinned ? '<span class="pin-mark" aria-label="Angeheftet">📌</span> ' : ''}${esc(n.title)}</h2>
+        <span class="note-actions">
+          <button class="link-btn" data-action="note-pin" data-id="${esc(n.id)}">${n.pinned ? 'Lösen' : 'Anheften'}</button>
+          <button class="link-btn" data-action="note-edit" data-id="${esc(n.id)}">Bearbeiten</button>
+        </span>
+      </div>
       ${n.text ? `<p class="note-text">${esc(n.text)}</p>` : ''}
       ${imagesOf(n.id).length ? `<div class="note-thumbs">${imagesOf(n.id).map((img) => `
         <button class="note-thumb" data-action="image-open" data-id="${esc(img.id)}"><img src="${img.data}" alt="Bild"></button>`).join('')}</div>` : ''}
@@ -1690,6 +1742,12 @@ function openExpenseForm(expense, opts = {}) {
   $('#f-category').innerHTML = CATEGORIES.map((c) => chip('category', 'radio', c.id, `${c.icon} ${c.name}`, c.id === category)).join('');
   $('#f-paidby').innerHTML = PEOPLE.map((p) => chip('paidBy', 'radio', p.id, p.name, p.id === paidBy)).join('');
   $('#f-split').innerHTML = PEOPLE.map((p) => chip('split', 'checkbox', p.id, p.name, split.includes(p.id))).join('');
+  // Ungleich aufteilen (nicht bei Daueraufträgen)
+  $('#f-uneven-row').hidden = recurring;
+  $('#f-uneven').checked = !recurring && Boolean(expense?.shares);
+  state.shareValues = Object.fromEntries(Object.entries(expense?.shares ?? {})
+    .map(([id, cents]) => [id, (cents / 100).toFixed(2).replace('.', ',')]));
+  renderShareRows();
 
   $('#f-delete').hidden = !expense;
   $('#f-error').textContent = '';
@@ -1698,22 +1756,70 @@ function openExpenseForm(expense, opts = {}) {
   if (!expense) $('#f-amount').focus();
 }
 
+// Betrag eines Anteils: leer oder 0 = 0 Cent, ungültig = null
+function parseShare(text) {
+  const t = String(text ?? '').trim();
+  if (!t || /^0+([.,]0*)?$/.test(t)) return 0;
+  return parseEuro(t);
+}
+
 function readForm() {
   const form = $('#expense-form');
+  const selected = [...form.querySelectorAll('input[name=split]:checked')].map((i) => i.value);
+  const uneven = !$('#f-uneven-row').hidden && $('#f-uneven').checked;
+  let shares = null;
+  if (uneven) {
+    shares = Object.fromEntries(selected.map((id) => [id, parseShare(state.shareValues?.[id])]));
+  }
   return {
     amountCents: parseEuro($('#f-amount').value),
     description: $('#f-desc').value.trim(),
     category: form.querySelector('input[name=category]:checked')?.value ?? 'sonstiges',
     paidBy: form.querySelector('input[name=paidBy]:checked')?.value ?? state.me,
-    splitAmong: [...form.querySelectorAll('input[name=split]:checked')].map((i) => i.value),
+    splitAmong: shares ? selected.filter((id) => shares[id] > 0) : selected,
+    shares,
     date: $('#f-date').value || todayISO(),
   };
 }
 
+// Eingabefelder für "ungleich aufteilen" – nur neu zeichnen, wenn sich die Auswahl ändert
+function renderShareRows() {
+  const box = $('#f-shares');
+  const on = !$('#f-uneven-row').hidden && $('#f-uneven').checked;
+  box.hidden = !on;
+  if (!on) return;
+  const selected = [...document.querySelectorAll('#expense-form input[name=split]:checked')].map((i) => i.value);
+  box.innerHTML = selected.map((id) => `
+    <label class="share-row">
+      <span>${esc(personName(id))}</span>
+      <span class="share-input"><input inputmode="decimal" autocomplete="off" data-share="${id}" placeholder="0,00" value="${esc(state.shareValues?.[id] ?? '')}"><span>€</span></span>
+    </label>`).join('');
+}
+
+// Beim Einschalten: Betrag erst einmal gleichmäßig vorschlagen
+function toggleUneven() {
+  if ($('#f-uneven').checked) {
+    const { amountCents } = readForm();
+    const selected = [...document.querySelectorAll('#expense-form input[name=split]:checked')].map((i) => i.value);
+    const even = amountCents ? splitAmount(amountCents, selected, PERSON_IDS) : {};
+    state.shareValues = Object.fromEntries(selected.map((id) => [id, even[id] ? (even[id] / 100).toFixed(2).replace('.', ',') : '']));
+  }
+  renderShareRows();
+  updateSplitHint();
+}
+
 function updateSplitHint() {
-  const { amountCents, splitAmong } = readForm();
+  const { amountCents, splitAmong, shares } = readForm();
   const hint = $('#f-split-hint');
-  if (!splitAmong.length) {
+  if (shares) {
+    const values = Object.values(shares);
+    const sum = values.reduce((a, b) => a + (b ?? 0), 0);
+    hint.textContent = values.some((v) => v == null) ? 'Bitte gültige Beträge eingeben, z. B. 12,50.'
+      : !amountCents ? 'Bitte oben zuerst den Betrag eingeben.'
+        : sum === amountCents ? '✓ Passt genau.'
+          : sum < amountCents ? `Noch ${formatEuro(amountCents - sum)} zu verteilen.`
+            : `${formatEuro(sum - amountCents)} zu viel verteilt.`;
+  } else if (!splitAmong.length) {
     hint.textContent = 'Bitte mindestens eine Person auswählen.';
   } else if (splitAmong.length === 1) {
     hint.textContent = `${personName(splitAmong[0])} trägt alles.`;
@@ -1731,8 +1837,11 @@ function onSubmitExpense(event) {
   const data = readForm();
   const problem = !data.amountCents ? 'Bitte einen gültigen Betrag eingeben, z. B. 12,50.'
     : !data.description ? 'Bitte eingeben, wofür das Geld war.'
-      : !data.splitAmong.length ? 'Bitte bei „Für wen?“ mindestens eine Person auswählen.'
-        : '';
+      : !data.splitAmong.length ? 'Bitte bei „Für wen?“ mindestens eine Person auswählen (mit Betrag über 0).'
+        : data.shares && Object.values(data.shares).some((v) => v == null) ? 'Bitte bei „Ungleich aufteilen“ gültige Beträge eingeben.'
+          : data.shares && Object.values(data.shares).reduce((a, b) => a + b, 0) !== data.amountCents
+            ? 'Die Anteile müssen zusammen genau den Betrag ergeben.'
+            : '';
   if (problem) {
     $('#f-error').textContent = problem;
     return;
@@ -1751,6 +1860,7 @@ function onSubmitExpense(event) {
     return;
   }
 
+  if (data.shares) data.shares = Object.fromEntries(Object.entries(data.shares).filter(([, cents]) => cents > 0));
   const saving = id
     ? backend.update('expenses', id, { ...data, updatedAt: backend.now(), updatedBy: state.me })
     : backend.add('expenses', { ...data, createdAt: backend.now(), createdBy: state.me, settlementId: null });
@@ -1873,6 +1983,14 @@ function onClick(event) {
     case 'note-edit': openNoteForm(state.notes.find((n) => n.id === el.dataset.id)); break;
     case 'note-delete': deleteNote(); break;
     case 'note-copy': copyNote(el.dataset.id); break;
+    case 'note-pin': {
+      const note = state.notes.find((n) => n.id === el.dataset.id);
+      if (note) backend.update('notes', note.id, { pinned: !note.pinned }).catch(showError);
+      break;
+    }
+    case 'shoporder-open': renderShopOrder(shopCategories()); $('#shoporder-dialog').showModal(); break;
+    case 'shoporder-move': moveShopCategory(el); break;
+    case 'shoporder-reset': renderShopOrder(SHOP_CATEGORIES); break;
     case 'image-open': openImage(el.dataset.id); break;
     case 'image-zoom': $('#viewer-scroll').classList.toggle('zoomed'); break;
     case 'note-image-remove':
@@ -1909,9 +2027,18 @@ function onClick(event) {
 
 document.addEventListener('click', onClick);
 $('#expense-form').addEventListener('submit', onSubmitExpense);
-$('#expense-form').addEventListener('input', updateSplitHint);
-$('#expense-form').addEventListener('change', updateSplitHint);
+$('#expense-form').addEventListener('input', (event) => {
+  if (event.target.dataset.share) state.shareValues[event.target.dataset.share] = event.target.value;
+  $('#f-error').textContent = '';
+  updateSplitHint();
+});
+$('#expense-form').addEventListener('change', (event) => {
+  if (event.target.id === 'f-uneven') toggleUneven();
+  else if (event.target.name === 'split') { renderShareRows(); updateSplitHint(); }
+  else updateSplitHint();
+});
 $('#areas-form').addEventListener('submit', onSubmitAreas);
+$('#shoporder-form').addEventListener('submit', onSubmitShopOrder);
 // Beim Tippen des Namens das passende Symbol vorschlagen (solange keins ausgewählt wurde)
 $('#areas-list').addEventListener('input', (event) => {
   if (!event.target.classList.contains('area-name')) return;

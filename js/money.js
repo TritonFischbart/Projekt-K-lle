@@ -30,12 +30,25 @@ export function splitAmount(amountCents, ids, order = ids) {
   return shares;
 }
 
+// Anteile einer Ausgabe: bei "ungleich aufteilen" die gespeicherten Beträge
+// (wenn sie genau aufgehen), sonst gleichmäßig auf alle in splitAmong.
+export function expenseShares(expense, order) {
+  const ids = expense.splitAmong ?? [];
+  const custom = expense.shares;
+  if (custom) {
+    const entries = order.filter((id) => ids.includes(id) && custom[id] > 0).map((id) => [id, custom[id]]);
+    const sum = entries.reduce((total, [, cents]) => total + cents, 0);
+    if (entries.length && sum === expense.amountCents) return Object.fromEntries(entries);
+  }
+  return splitAmount(expense.amountCents, ids, order);
+}
+
 // Kontostand pro Person: positiv = bekommt Geld, negativ = schuldet Geld.
 export function computeBalances(peopleIds, expenses, payments) {
   const balances = Object.fromEntries(peopleIds.map((id) => [id, 0]));
   for (const e of expenses) {
     if (!(e.paidBy in balances)) continue;
-    const shares = splitAmount(e.amountCents, e.splitAmong ?? [], peopleIds);
+    const shares = expenseShares(e, peopleIds);
     if (!Object.keys(shares).length) continue;
     balances[e.paidBy] += e.amountCents;
     for (const [id, share] of Object.entries(shares)) balances[id] -= share;
