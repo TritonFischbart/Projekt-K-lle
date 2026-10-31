@@ -2,16 +2,17 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=15';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=15';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=15';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=15';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=15';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=15';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=15';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=15';
-import { toPlain, expensesCsv } from './export.js?v=15';
-import { firebaseConfig } from './firebase-config.js?v=15';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=16';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=16';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=16';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=16';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=16';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=16';
+import { compressImage } from './images.js?v=16';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=16';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=16';
+import { toPlain, expensesCsv } from './export.js?v=16';
+import { firebaseConfig } from './firebase-config.js?v=16';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -38,6 +39,9 @@ const state = {
   pendingShopIds: [],
   loaded: {},
   editingNote: null,
+  noteImages: [],
+  pendingImages: [],
+  removedImages: [],
   calendar: { config: null, events: null, error: null, loading: false, loadedAt: 0 },
   tab: 'start',
   absences: [],
@@ -138,9 +142,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=15')).createDemoBackend();
+      backend = (await import('./demo.js?v=16')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=15')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=16')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -171,6 +175,7 @@ function handleUser(user) {
   listen('expenses', (docs) => { state.expenses = docs; state.loaded.expenses = true; scheduleRecurring(); renderAll(); });
   listen('recurring', (docs) => { state.recurring = docs; state.loaded.recurring = true; scheduleRecurring(); renderAll(); });
   listen('notes', (docs) => { state.notes = docs; renderAll(); });
+  listen('noteImages', (docs) => { state.noteImages = docs; renderAll(); });
   listen('absences', (docs) => { state.absences = docs; renderAll(); });
   listen('polls', (docs) => { state.polls = docs; renderAll(); });
   listen('payments', (docs) => { state.payments = docs; renderAll(); });
@@ -1133,6 +1138,8 @@ function renderInfos() {
     <article class="card note">
       <div class="card-head"><h2>${esc(n.title)}</h2><button class="link-btn" data-action="note-edit" data-id="${esc(n.id)}">Bearbeiten</button></div>
       ${n.text ? `<p class="note-text">${esc(n.text)}</p>` : ''}
+      ${imagesOf(n.id).length ? `<div class="note-thumbs">${imagesOf(n.id).map((img) => `
+        <button class="note-thumb" data-action="image-open" data-id="${esc(img.id)}"><img src="${img.data}" alt="Bild"></button>`).join('')}</div>` : ''}
       <div class="note-foot">
         <span>${esc(personName(n.updatedBy ?? n.createdBy))} · ${new Date(toMillis(n.updatedAt ?? n.createdAt) || Date.now()).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}</span>
         ${n.text ? `<button class="link-btn" data-action="note-copy" data-id="${esc(n.id)}">Text kopieren</button>` : ''}
@@ -1164,8 +1171,50 @@ function renderInfos() {
     </section>`;
 }
 
+const imagesOf = (noteId) => state.noteImages
+  .filter((img) => img.noteId === noteId)
+  .sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt));
+
+function renderNoteFormImages() {
+  const existing = imagesOf(state.editingNote).filter((img) => !state.removedImages.includes(img.id));
+  const all = [
+    ...existing.map((img) => ({ key: img.id, data: img.data, kind: 'saved' })),
+    ...state.pendingImages.map((img, i) => ({ key: String(i), data: img.data, kind: 'new' })),
+  ];
+  $('#n-images').innerHTML = all.map((img) => `
+    <span class="note-thumb">
+      <img src="${img.data}" alt="Bild">
+      <button type="button" class="thumb-remove" data-action="note-image-remove" data-kind="${img.kind}" data-key="${esc(img.key)}" aria-label="Bild entfernen">✕</button>
+    </span>`).join('');
+}
+
+async function addNoteImages(files) {
+  for (const file of files) {
+    try {
+      toast('Bild wird vorbereitet …');
+      state.pendingImages.push(await compressImage(file));
+      renderNoteFormImages();
+      toast('Bild hinzugefügt ✓ Zum Speichern unten auf „Speichern“ tippen.');
+    } catch (err) {
+      console.error(err);
+      toast('Dieses Bild konnte nicht gelesen werden. Versuch es mit einem Screenshot.', true);
+    }
+  }
+}
+
+function openImage(id) {
+  const img = state.noteImages.find((i) => i.id === id);
+  if (!img) return;
+  $('#viewer-img').src = img.data;
+  $('#viewer-scroll').classList.remove('zoomed');
+  $('#image-dialog').showModal();
+}
+
 function openNoteForm(note, template) {
   state.editingNote = note?.id ?? null;
+  state.pendingImages = [];
+  state.removedImages = [];
+  renderNoteFormImages();
   $('#note-title-head').textContent = note ? 'Notiz bearbeiten' : 'Neue Notiz';
   $('#n-title').value = note?.title ?? template?.title ?? '';
   $('#n-text').value = note?.text ?? template?.text ?? '';
@@ -1182,11 +1231,18 @@ function onSubmitNote(event) {
     $('#n-error').textContent = 'Bitte eine Überschrift eingeben.';
     return;
   }
-  const id = state.editingNote;
-  const saving = id
+  // Neue Notizen bekommen ihre ID gleich hier, damit die Bilder wissen, wohin sie gehören.
+  const id = state.editingNote ?? `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  const saving = state.editingNote
     ? backend.update('notes', id, { title, text, updatedBy: state.me, updatedAt: backend.now() })
-    : backend.add('notes', { title, text, createdBy: state.me, createdAt: backend.now(), updatedBy: state.me, updatedAt: backend.now() });
+    : backend.set('notes', id, { title, text, createdBy: state.me, createdAt: backend.now(), updatedBy: state.me, updatedAt: backend.now() });
   saving.catch(showError);
+  state.pendingImages.forEach((img) => backend.add('noteImages', {
+    noteId: id, data: img.data, width: img.width, height: img.height, createdBy: state.me, createdAt: backend.now(),
+  }).catch(showError));
+  state.removedImages.forEach((imgId) => backend.remove('noteImages', imgId).catch(showError));
+  state.pendingImages = [];
+  state.removedImages = [];
   $('#note-dialog').close();
   toast('Notiz gespeichert ✓');
 }
@@ -1195,7 +1251,10 @@ function deleteNote() {
   const note = state.notes.find((n) => n.id === state.editingNote);
   if (!note) return;
   $('#note-dialog').close();
-  removeWithUndo('Notiz gelöscht', [{ col: 'notes', doc: note }]);
+  removeWithUndo('Notiz gelöscht', [
+    { col: 'notes', doc: note },
+    ...imagesOf(note.id).map((doc) => ({ col: 'noteImages', doc })),
+  ]);
 }
 
 async function copyNote(id) {
@@ -1243,6 +1302,7 @@ async function exportJson() {
     chores: Object.values(state.chores),
     choreAreas: state.areas,
     notes: state.notes,
+    noteImages: state.noteImages,
     absences: state.absences,
     polls: state.polls,
   });
@@ -1501,7 +1561,7 @@ function renderSearch() {
 
 // ---------- Sicherung zurückspielen ----------
 
-const RESTORE_COLLECTIONS = ['expenses', 'payments', 'settlements', 'recurring', 'shopping', 'favorites', 'chores', 'notes', 'absences', 'polls'];
+const RESTORE_COLLECTIONS = ['expenses', 'payments', 'settlements', 'recurring', 'shopping', 'favorites', 'chores', 'notes', 'noteImages', 'absences', 'polls'];
 
 async function restoreBackup(file) {
   let data;
@@ -1748,6 +1808,13 @@ function onClick(event) {
     case 'note-edit': openNoteForm(state.notes.find((n) => n.id === el.dataset.id)); break;
     case 'note-delete': deleteNote(); break;
     case 'note-copy': copyNote(el.dataset.id); break;
+    case 'image-open': openImage(el.dataset.id); break;
+    case 'image-zoom': $('#viewer-scroll').classList.toggle('zoomed'); break;
+    case 'note-image-remove':
+      if (el.dataset.kind === 'new') state.pendingImages.splice(Number(el.dataset.key), 1);
+      else state.removedImages.push(el.dataset.key);
+      renderNoteFormImages();
+      break;
     case 'export-json': exportJson(); break;
     case 'export-csv': exportCsv(); break;
     case 'shop-category': openShopCategory(el.dataset.id); break;
@@ -1782,6 +1849,11 @@ $('#expense-form').addEventListener('change', updateSplitHint);
 $('#areas-form').addEventListener('submit', onSubmitAreas);
 $('#calendar-form').addEventListener('submit', onSubmitCalendar);
 $('#note-form').addEventListener('submit', onSubmitNote);
+$('#n-file').addEventListener('change', (event) => {
+  const files = [...event.target.files];
+  event.target.value = '';
+  addNoteImages(files);
+});
 $('#absence-form').addEventListener('submit', onSubmitAbsence);
 $('#poll-form').addEventListener('submit', onSubmitPoll);
 $('#search-input').addEventListener('input', renderSearch);

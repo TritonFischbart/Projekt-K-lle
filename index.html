@@ -8,11 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kölle">
   <title>Projekt Kölle</title>
-  <link rel="icon" href="icons/icon.svg?v=15" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=15">
-  <link rel="manifest" href="manifest.webmanifest?v=15">
-  <link rel="stylesheet" href="css/style.css?v=15">
-  <script type="module" src="js/app.js?v=15"></script>
+  <link rel="icon" href="icons/icon.svg?v=16" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=16">
+  <link rel="manifest" href="manifest.webmanifest?v=16">
+  <link rel="stylesheet" href="css/style.css?v=16">
+  <script type="module" src="js/app.js?v=16"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -23,7 +23,7 @@
   <!-- Firebase ist noch nicht eingerichtet -->
   <div id="screen-setup" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=15" alt="" class="logo">
+      <img src="icons/icon.svg?v=16" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
       <a class="btn primary" href="?demo">Demo ansehen</a>
@@ -33,7 +33,7 @@
   <!-- Anmelden -->
   <div id="screen-login" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=15" alt="" class="logo">
+      <img src="icons/icon.svg?v=16" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p>Die WG-Seite von Jana, Jul und Lukas.</p>
       <button class="btn primary" data-action="login">Mit Google anmelden</button>
@@ -62,7 +62,7 @@
   <!-- Die eigentliche App -->
   <div id="screen-app" class="screen" hidden>
     <header class="topbar">
-      <div class="brand"><img src="icons/icon.svg?v=15" alt=""> Projekt Kölle</div>
+      <div class="brand"><img src="icons/icon.svg?v=16" alt=""> Projekt Kölle</div>
       <button class="me-button" id="me-button" data-action="logout"></button>
     </header>
     <div id="demo-banner" class="demo-banner" hidden>Demo-Modus – nichts wird gespeichert</div>
@@ -213,12 +213,30 @@
         <span class="label">Text</span>
         <textarea id="n-text" rows="6" maxlength="2000" placeholder="z. B. Netzwerk: FRITZ!Box 7590&#10;Passwort: …"></textarea>
       </label>
+      <div class="field">
+        <span class="label">Bilder</span>
+        <div class="note-thumbs" id="n-images"></div>
+        <label class="btn outline">
+          📷 Bild hinzufügen
+          <input type="file" id="n-file" accept="image/*" multiple hidden>
+        </label>
+        <span class="hint">Z. B. Grundriss aus dem Exposé. Bei einer PDF am besten einen Screenshot der Seite machen.</span>
+      </div>
       <p class="error" id="n-error"></p>
       <div class="form-actions">
         <button type="button" class="btn danger" id="n-delete" data-action="note-delete">Löschen</button>
         <button type="submit" class="btn primary">Speichern</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- Bild groß anzeigen -->
+  <dialog id="image-dialog" class="image-viewer">
+    <button type="button" class="icon-btn viewer-close" data-action="close-form" aria-label="Schließen">✕</button>
+    <div class="viewer-scroll" id="viewer-scroll">
+      <img id="viewer-img" alt="" data-action="image-zoom">
+    </div>
+    <p class="viewer-hint">Antippen zum Vergrößern</p>
   </dialog>
 
   <!-- Auswahl: Kategorie eines Einkaufs ändern -->

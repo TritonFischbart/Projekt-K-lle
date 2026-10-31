@@ -1,7 +1,17 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=15';
+import { weekKey } from './chores.js?v=16';
+
+// Einfacher gezeichneter Grundriss als Beispielbild
+function demoFloorPlan() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520"><rect width="800" height="520" fill="#fff"/>
+    <g fill="none" stroke="#222" stroke-width="8"><rect x="20" y="20" width="760" height="480"/>
+    <path d="M300 20v200M300 300v200M300 300h200M500 20v280M500 380v120M20 260h280"/></g>
+    <g font-family="sans-serif" font-size="28" fill="#555"><text x="80" y="140">Jana</text><text x="80" y="390">Jul</text>
+    <text x="360" y="420">Bad</text><text x="330" y="150">Küche</text><text x="590" y="200">Lukas</text><text x="560" y="450">Flur</text></g></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
 
 function thisMonth() {
   const d = new Date();
@@ -50,6 +60,9 @@ export function createDemoBackend() {
       { id: 'r1', description: 'Internet', amountCents: 3999, paidBy: 'lukas', splitAmong: all, category: 'nebenkosten', dayOfMonth: 1, lastBooked: lastMonth() },
       { id: 'r2', description: 'Netflix', amountCents: 1799, paidBy: 'jana', splitAmong: all, category: 'freizeit', dayOfMonth: 28, lastBooked: thisMonth() },
     ],
+    noteImages: [
+      { id: 'img1', noteId: 'n3', data: demoFloorPlan(), width: 800, height: 520, createdBy: 'lukas', createdAt: created(10) },
+    ],
     absences: [
       { id: 'a1', person: 'jana', from: daysAgo(-1), to: daysAgo(-4), note: 'Hamburg' },
       { id: 'a2', person: 'julian', from: daysAgo(-20), to: daysAgo(-27), note: 'Urlaub' },
@@ -59,6 +72,7 @@ export function createDemoBackend() {
     ],
     notes: [
       { id: 'n1', title: '📶 WLAN', text: 'Netzwerk: Koelle-WG\nPasswort: DomBlick2026!', createdBy: 'lukas', createdAt: created(20), updatedBy: 'lukas', updatedAt: created(20) },
+      { id: 'n3', title: '📐 Grundriss', text: 'Aus dem Exposé, 3 Zimmer, 78 m²', createdBy: 'lukas', createdAt: created(25), updatedBy: 'lukas', updatedAt: created(10) },
       { id: 'n2', title: '🏠 Vermieter & Hausverwaltung', text: 'Herr Beispiel\nTelefon: 0221 123456', createdBy: 'jana', createdAt: created(15), updatedBy: 'jana', updatedAt: created(4) },
     ],
     settings: [
