@@ -74,6 +74,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `js/stats.js` | Monatsübersicht der Ausgaben |
 | `js/export.js` | Datensicherung (JSON) und Ausgaben-Tabelle (CSV für Excel) |
 | `js/absences.js` | Urlaubs-Modus: wer wann weg ist |
+| `js/images.js` | Bilder fürs Schwarze Brett auf dem Handy verkleinern |
 | `js/firebase.js` | Firebase-Anbindung (Backend) |
 | `js/demo.js` | Demo-Backend mit Beispieldaten (`?demo`) |
 | `manifest.webmanifest`, `icons/` | App-Symbol (Kölner Dom) für den Home-Bildschirm |
@@ -105,7 +106,8 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `shopping` | Einkaufsliste: `name, category, addedBy, doneBy, doneAt` |
 | `favorites/{name}` | Wie oft etwas gekauft wurde + gemerkte Kategorie (Schnellauswahl) |
 | `recurring` | Daueraufträge: `description, amountCents, paidBy, splitAmong, category, dayOfMonth (1–28), lastBooked ("2026-11")` |
-| `notes` | Schwarzes Brett: `title, text, createdBy, updatedBy` |
+| `notes` | Schwarzes Brett: `title, text, createdBy, updatedBy` (ID wird in der App erzeugt) |
+| `noteImages` | Bilder zu Notizen: `noteId, data` (JPEG als Data-URL, max. ~0,9 MB), `width, height` |
 | `settings/backup` | Wann zuletzt gesichert wurde (`at`, `by`) |
 | `absences` | Abwesenheiten: `person, from, to ("2026-11-10"), note` |
 | `polls` | Abstimmungen: `question, options[], votes {person: index}, closed, closedAt` (Stimme per `votes.{person}` speichern) |
@@ -183,6 +185,10 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 ### 📌 Infos
 - **Schwarzes Brett**: Notizen mit Vorlagen (WLAN, Vermieter, Zählerstände, Schlüssel,
   Notfall). „Text kopieren“ z. B. fürs WLAN-Passwort.
+- **Bilder** an Notizen (z. B. Grundriss aus dem Exposé): werden auf dem Handy auf
+  max. 1600 px / < 0,9 MB verkleinert und **in Firestore** gespeichert (kostenlos, kein
+  Firebase Storage/„Blaze“ nötig). Vorschaubilder, Tippen = groß, nochmal = Zoom.
+  PDFs gehen nicht direkt → Screenshot der Seite.
 - **Datensicherung**: „Alle Daten sichern“ (JSON, ohne API-Schlüssel) und „Ausgaben
   als Tabelle (Excel)“. Auf dem Handy über „Teilen“ speichern. Hinweis, wenn die letzte
   Sicherung über 30 Tage her ist.
