@@ -1,7 +1,7 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=17';
+import { weekKey } from './chores.js?v=18';
 
 // Einfacher gezeichneter Grundriss als Beispielbild
 function demoFloorPlan() {
@@ -76,6 +76,13 @@ export function createDemoBackend() {
       { id: 'n2', title: '🏠 Vermieter & Hausverwaltung', text: 'Herr Beispiel\nTelefon: 0221 123456', createdBy: 'jana', createdAt: created(15), updatedBy: 'jana', updatedAt: created(4) },
     ],
     settings: [
+      { id: 'putzplan', areas: [
+        { id: 'bad', name: 'Bad', icon: '🛁', details: 'Toilette, Waschbecken, Dusche, Spiegel', every: 1 },
+        { id: 'kueche', name: 'Küche', icon: '🍳', details: 'Arbeitsflächen, Herd, Spüle', every: 1 },
+        { id: 'boeden', name: 'Böden', icon: '🧹', details: 'Saugen & Wischen', every: 1 },
+        { id: 'muell', name: 'Müll', icon: '🗑️', details: 'Restmüll, Bio, Gelber Sack', every: 1 },
+        { id: 'altglas', name: 'Altglas', icon: '🍾', details: 'Zum Container bringen', every: 2 },
+      ] },
       { id: 'kalender', calendarId: 'demo@group.calendar.google.com', apiKey: 'AIzaDemoDemoDemoDemoDemoDemo' },
     ],
     favorites: [
