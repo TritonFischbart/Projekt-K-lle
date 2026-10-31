@@ -2,15 +2,16 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=12';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=12';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=12';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=12';
-import { SHOP_CATEGORIES, guessCategory } from './shopcats.js?v=12';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=12';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=12';
-import { toPlain, expensesCsv } from './export.js?v=12';
-import { firebaseConfig } from './firebase-config.js?v=12';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=14';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=14';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=14';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=14';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=14';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=14';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=14';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=14';
+import { toPlain, expensesCsv } from './export.js?v=14';
+import { firebaseConfig } from './firebase-config.js?v=14';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -38,7 +39,9 @@ const state = {
   loaded: {},
   editingNote: null,
   calendar: { config: null, events: null, error: null, loading: false, loadedAt: 0 },
-  tab: 'ausgaben',
+  tab: 'start',
+  absences: [],
+  polls: [],
   editingId: null,
 };
 
@@ -72,6 +75,7 @@ function toMillis(ts) {
   if (!ts) return 0;
   if (typeof ts.toMillis === 'function') return ts.toMillis();
   if (ts instanceof Date) return ts.getTime();
+  if (typeof ts === 'string') return Date.parse(ts) || 0;
   return Number(ts) || 0;
 }
 
@@ -94,12 +98,27 @@ const activeExpenses = () => state.expenses.filter((e) => !e.settlementId);
 const activePayments = () => state.payments.filter((p) => !p.settlementId);
 
 let toastTimer;
-function toast(message, isError = false) {
+let toastUndo = null;
+function toast(message, isError = false, undo = null) {
   const el = $('#toast');
-  el.textContent = message;
-  el.className = `toast show${isError ? ' error' : ''}`;
+  $('#toast-text').textContent = message;
+  toastUndo = undo;
+  $('#toast-undo').hidden = !undo;
+  el.className = `toast show${isError ? ' error' : ''}${undo ? ' has-action' : ''}`;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = 'toast'; }, 2800);
+  toastTimer = setTimeout(() => { el.className = 'toast'; toastUndo = null; }, undo ? 6000 : 2800);
+}
+
+// Löschen mit "Rückgängig": die gelöschten Einträge werden kurz gemerkt.
+function removeWithUndo(message, items) {
+  items.forEach(({ col, doc }) => backend.remove(col, doc.id).catch(showError));
+  toast(message, false, () => {
+    items.forEach(({ col, doc }) => {
+      const { id, ...data } = doc;
+      backend.set(col, id, data).catch(showError);
+    });
+    toast('Wiederhergestellt ✓');
+  });
 }
 
 function showError(err) {
@@ -119,9 +138,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=12')).createDemoBackend();
+      backend = (await import('./demo.js?v=14')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=12')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=14')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -152,6 +171,8 @@ function handleUser(user) {
   listen('expenses', (docs) => { state.expenses = docs; state.loaded.expenses = true; scheduleRecurring(); renderAll(); });
   listen('recurring', (docs) => { state.recurring = docs; state.loaded.recurring = true; scheduleRecurring(); renderAll(); });
   listen('notes', (docs) => { state.notes = docs; renderAll(); });
+  listen('absences', (docs) => { state.absences = docs; renderAll(); });
+  listen('polls', (docs) => { state.polls = docs; renderAll(); });
   listen('payments', (docs) => { state.payments = docs; renderAll(); });
   listen('settlements', (docs) => { state.settlements = docs; renderAll(); });
   listen('chores', (docs) => { state.chores = Object.fromEntries(docs.map((d) => [d.id, d])); renderAll(); });
@@ -251,13 +272,14 @@ function renderHeader() {
 function switchTab(tab) {
   state.tab = tab;
   document.querySelectorAll('.tab').forEach((section) => { section.hidden = section.id !== `tab-${tab}`; });
+  const barTab = tab === 'kalender' ? 'start' : tab;
   document.querySelectorAll('.tabbar button').forEach((b) => {
-    if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page');
+    if (b.dataset.tab === barTab) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
   $('.fab').hidden = tab !== 'ausgaben';
   if (tab !== 'putzplan') state.choreWeekOffset = 0;
-  if (tab === 'kalender' && Date.now() - state.calendar.loadedAt > 60000) loadEvents();
+  if (['kalender', 'start'].includes(tab) && Date.now() - state.calendar.loadedAt > 60000) loadEvents();
   window.scrollTo(0, 0);
 }
 
@@ -268,9 +290,12 @@ function renderAll() {
   renderPutzplan();
   renderKalender();
   renderInfos();
+  renderStart();
   const open = myOpenChores().length;
   const tabButton = document.querySelector('.tabbar [data-tab=putzplan]');
   tabButton.classList.toggle('has-badge', open > 0);
+  // Punkt an "Start", solange eine Abstimmung auf deine Stimme wartet
+  document.querySelector('.tabbar [data-tab=start]').classList.toggle('has-badge', openPolls().some((p) => p.votes?.[state.me] == null));
 }
 
 // ---------- Ausgaben anzeigen ----------
@@ -285,8 +310,6 @@ function renderAusgaben() {
   const transfers = suggestTransfers(balances, PERSON_IDS);
 
   $('#tab-ausgaben').innerHTML = [
-    todayBanner(),
-    choreBanner(),
     heroCard(balances[state.me]),
     balancesCard(balances),
     transfersCard(transfers, expenses.length + payments.length > 0),
@@ -502,7 +525,10 @@ function entriesCard(expenses, payments) {
   const body = expenses.length + payments.length
     ? entryList(expenses, payments, false)
     : '<p class="empty">Noch keine Ausgaben. Tippe unten auf „＋ Ausgabe“.</p>';
-  return `<section class="card"><h2>Einträge</h2>${body}</section>`;
+  return `<section class="card">
+    <div class="card-head"><h2>Einträge</h2><button class="link-btn" data-action="search-open">🔍 Suchen</button></div>
+    ${body}
+  </section>`;
 }
 
 function historyCard(openIds) {
@@ -531,15 +557,20 @@ const choreAreas = () => state.areas ?? CHORES;
 function weekChores(monday) {
   const key = weekKey(monday);
   const idx = weekIndex(monday);
+  // Wer in dieser Woche (fast) die ganze Zeit weg ist, bekommt keine Aufgabe.
+  const present = PERSON_IDS.filter((id) => !isAwayForWeek(state.absences, id, monday));
   return choreAreas().map((chore, i) => {
     const docId = `${key}_${chore.id}`;
     const saved = state.chores[docId];
-    const planned = defaultAssignee(PERSON_IDS, i, idx);
+    const base = defaultAssignee(PERSON_IDS, i, idx);
+    const away = present.length && !present.includes(base);
+    const planned = away ? present[(i + idx) % present.length] : base;
     return {
       chore,
       docId,
       week: key,
       planned,
+      awayPerson: away ? base : null,
       assignee: saved?.assignee ?? planned,
       doneBy: saved?.doneBy ?? null,
       saved,
@@ -550,16 +581,6 @@ function weekChores(monday) {
 const thisMonday = () => mondayOf(new Date());
 const myOpenChores = () => weekChores(thisMonday()).filter((c) => c.assignee === state.me && !c.doneBy);
 
-function choreBanner() {
-  const open = myOpenChores();
-  if (!open.length) return '';
-  return `
-    <button class="card banner" data-action="tab" data-tab="putzplan">
-      <span class="banner-icon" aria-hidden="true">${open[0].chore.icon}</span>
-      <span class="banner-text">Diese Woche bist du dran mit:<strong>${open.map((c) => esc(c.chore.name)).join(' & ')}</strong></span>
-      <span class="banner-arrow" aria-hidden="true">›</span>
-    </button>`;
-}
 
 function weekTitle(offset, monday) {
   if (offset === 0) return 'Diese Woche';
@@ -589,6 +610,13 @@ function saveChore(c, changes) {
 function findChore(docId) {
   const monday = addDays(thisMonday(), state.choreWeekOffset * 7);
   return weekChores(monday).find((c) => c.docId === docId);
+}
+
+function choreDoneThisWeek(docId) {
+  const c = weekChores(thisMonday()).find((x) => x.docId === docId);
+  if (!c) return;
+  saveChore(c, { doneBy: state.me, doneAt: backend.now() });
+  toast(`${c.chore.name} erledigt – danke! 💪`);
 }
 
 function choreDone(docId) {
@@ -622,7 +650,7 @@ function choreItem(c, offset) {
   const who = `
     <span class="chore-who">
       ${avatar(c.assignee, true)}
-      <span>${mine ? 'Du' : esc(personName(c.assignee))}${swapped ? ` <em>(übernommen von ${esc(personName(c.planned))})</em>` : ''}</span>
+      <span>${mine ? 'Du' : esc(personName(c.assignee))}${swapped ? ` <em>(übernommen von ${esc(personName(c.planned))})</em>` : ''}${c.awayPerson && !swapped ? ` <em>(statt ${esc(personName(c.awayPerson))} – nicht da)</em>` : ''}</span>
     </span>`;
 
   let actions = '';
@@ -766,7 +794,7 @@ function renderEinkauf() {
           <li class="shop-row">
             <button class="shop-item" data-action="shop-toggle" data-id="${esc(i.id)}">
               <span class="shop-check" aria-hidden="true"></span>
-              <span class="shop-name">${esc(i.name)}</span>
+              <span class="shop-name">${i.amount ? `<span class="shop-amount">${esc(i.amount)}</span> ` : ''}${esc(i.name)}</span>
               <span class="shop-meta">${esc(personName(i.addedBy))}</span>
             </button>
             <button class="icon-btn small" data-action="shop-category" data-id="${esc(i.id)}" aria-label="Kategorie von ${esc(i.name)} ändern">${g.cat.icon}</button>
@@ -783,7 +811,7 @@ function renderEinkauf() {
         <li class="shop-row">
           <button class="shop-item done" data-action="shop-toggle" data-id="${esc(i.id)}">
             <span class="shop-check" aria-hidden="true">✓</span>
-            <span class="shop-name">${esc(i.name)}</span>
+            <span class="shop-name">${i.amount ? `<span class="shop-amount">${esc(i.amount)}</span> ` : ''}${esc(i.name)}</span>
             <span class="shop-meta">von ${esc(personName(i.doneBy))}</span>
           </button>
         </li>`).join('')}</ul>
@@ -837,14 +865,22 @@ function renderQuickPicks() {
     </section>`;
 }
 
-function addShoppingItems(names) {
+// entries: Texte wie "2x Milch" oder Objekte { name, amount }
+function addShoppingItems(entries) {
   const onList = openShoppingNames();
-  const fresh = [...new Set(names)].filter((n) => !onList.has(n.toLowerCase()));
-  fresh.forEach((name) => {
+  const parsed = entries.map((e) => (typeof e === 'string' ? parseShoppingInput(e) : e)).filter((e) => e.name);
+  const seen = new Set();
+  const fresh = parsed.filter((e) => {
+    const key = e.name.toLowerCase();
+    if (onList.has(key) || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  fresh.forEach(({ name, amount }) => {
     const id = favoriteId(name);
     const known = state.favorites.find((f) => f.id === id);
     const category = known?.category ?? guessCategory(name);
-    backend.add('shopping', { name: known?.name ?? name, category, addedBy: state.me, createdAt: backend.now(), doneBy: null, doneAt: null }).catch(showError);
+    backend.add('shopping', { name: known?.name ?? name, amount: amount ?? '', category, addedBy: state.me, createdAt: backend.now(), doneBy: null, doneAt: null }).catch(showError);
     // Mitzählen, wie oft etwas gebraucht wird (und in welcher Kategorie).
     backend.set('favorites', id, {
       name: known?.name ?? name,
@@ -853,7 +889,7 @@ function addShoppingItems(names) {
       lastUsed: backend.now(),
     }).catch(showError);
   });
-  if (fresh.length < names.length) toast('Steht schon auf der Liste');
+  if (fresh.length < parsed.length) toast('Steht schon auf der Liste');
 }
 
 function onSubmitShopping(event) {
@@ -901,7 +937,7 @@ function setShopCategory(category) {
 
 function quickAdd(id) {
   const fav = state.favorites.find((f) => f.id === id);
-  if (fav) addShoppingItems([fav.name]);
+  if (fav) addShoppingItems([{ name: fav.name, amount: '' }]);
 }
 
 function quickRemove(id) {
@@ -932,13 +968,14 @@ function shopToggle(id) {
 }
 
 function shopDelete(id) {
-  backend.remove('shopping', id).catch(showError);
+  const item = state.shopping.find((i) => i.id === id);
+  if (item) removeWithUndo(`„${item.name}“ gelöscht`, [{ col: 'shopping', doc: item }]);
 }
 
 function shopClear() {
   const done = state.shopping.filter((i) => i.doneBy);
-  if (!confirm(`${done.length} besorgte Sachen von der Liste entfernen?`)) return;
-  done.forEach((i) => backend.remove('shopping', i.id).catch(showError));
+  if (!done.length) return;
+  removeWithUndo(`${done.length} besorgte ${done.length === 1 ? 'Sache' : 'Sachen'} entfernt`, done.map((doc) => ({ col: 'shopping', doc })));
 }
 
 // ---------- Kalender ----------
@@ -983,29 +1020,14 @@ function dayTitle(day) {
   return day.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-function todayEvents() {
-  const groups = groupByDay(state.calendar.events ?? []);
-  return groups.length && sameDay(groups[0].day, new Date()) ? groups[0].events : [];
-}
 
-function todayBanner() {
-  const events = todayEvents();
-  if (!events.length) return '';
-  const text = events.slice(0, 3)
-    .map((e) => `${esc(e.title)}${e.allDay ? '' : ` · ${timeOf(e.start)}`}`).join('<br>');
-  return `
-    <button class="card banner" data-action="tab" data-tab="kalender">
-      <span class="banner-icon" aria-hidden="true">📅</span>
-      <span class="banner-text">Heute in der WG:<strong>${text}</strong></span>
-      <span class="banner-arrow" aria-hidden="true">›</span>
-    </button>`;
-}
 
 function renderKalender() {
   const cal = state.calendar;
   const el = $('#tab-kalender');
+  const back = '<button class="back-link" data-action="tab" data-tab="start">‹ Zur Übersicht</button>';
   if (!cal.config) {
-    el.innerHTML = `
+    el.innerHTML = `${back}
       <section class="card soon">
         <div class="soon-icon">📅</div>
         <h2>Gemeinsamer Kalender</h2>
@@ -1048,7 +1070,7 @@ function renderKalender() {
       <strong>„Alle Termindetails anzeigen“</strong> auswählen. Danach hier auf „Aktualisieren“ tippen.</p>
     </section>` : '';
 
-  el.innerHTML = `
+  el.innerHTML = `${back}
     ${titleHint}
     <section class="card">
       <div class="card-head">
@@ -1137,6 +1159,7 @@ function renderInfos() {
       <div class="stack">
         <button class="btn primary full" data-action="export-json">Alle Daten sichern</button>
         <button class="btn outline full" data-action="export-csv">Ausgaben als Tabelle (Excel)</button>
+        <button class="btn outline full" data-action="restore-open">Sicherung zurückspielen</button>
       </div>
     </section>`;
 }
@@ -1169,9 +1192,10 @@ function onSubmitNote(event) {
 }
 
 function deleteNote() {
-  if (!state.editingNote || !confirm('Diese Notiz löschen?')) return;
-  backend.remove('notes', state.editingNote).catch(showError);
+  const note = state.notes.find((n) => n.id === state.editingNote);
+  if (!note) return;
   $('#note-dialog').close();
+  removeWithUndo('Notiz gelöscht', [{ col: 'notes', doc: note }]);
 }
 
 async function copyNote(id) {
@@ -1219,6 +1243,8 @@ async function exportJson() {
     chores: Object.values(state.chores),
     choreAreas: state.areas,
     notes: state.notes,
+    absences: state.absences,
+    polls: state.polls,
   });
   const saved = await saveFile(`projekt-koelle-sicherung-${todayISO()}.json`, JSON.stringify(data, null, 2), 'application/json');
   if (saved) {
@@ -1233,6 +1259,283 @@ async function exportCsv() {
     categoryName: (id) => categoryOf(id).name,
   });
   await saveFile(`projekt-koelle-ausgaben-${todayISO()}.csv`, csv, 'text/csv');
+}
+
+// ---------- Start: Übersicht ----------
+
+const openPolls = () => state.polls.filter((p) => !p.closed);
+const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const shortDate = (iso) => formatDate(iso);
+
+function renderStart() {
+  const now = new Date();
+  const hour = now.getHours();
+  const hello = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Hallo' : 'Guten Abend';
+  const balance = computeBalances(PERSON_IDS, activeExpenses(), activePayments())[state.me];
+  const myChores = weekChores(thisMonday()).filter((c) => c.assignee === state.me);
+  const openShop = state.shopping.filter((i) => !i.doneBy);
+  const meAway = isAwayOn(state.absences, state.me);
+
+  $('#tab-start').innerHTML = `
+    <section class="start-hello">
+      <h1>${hello}, ${esc(personName(state.me))}!</h1>
+      <p>${now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}${meAway ? ' · du bist gerade nicht da 🌴' : ''}</p>
+    </section>
+    ${startCalendarCard()}
+    <div class="start-grid">
+      <button class="card tile" data-action="tab" data-tab="ausgaben">
+        <span class="tile-icon">💶</span>
+        <span class="tile-label">${balance > 0 ? 'Du bekommst' : balance < 0 ? 'Du schuldest' : 'Kontostand'}</span>
+        <strong class="tile-value">${balance === 0 ? 'ausgeglichen' : formatEuro(Math.abs(balance))}</strong>
+      </button>
+      <button class="card tile" data-action="tab" data-tab="einkauf">
+        <span class="tile-icon">🛒</span>
+        <span class="tile-label">Einkaufsliste</span>
+        <strong class="tile-value">${openShop.length ? `${openShop.length} ${openShop.length === 1 ? 'Sache fehlt' : 'Sachen fehlen'}` : 'alles da'}</strong>
+      </button>
+    </div>
+    ${startChoreCard(myChores)}
+    ${pollsCard()}
+    ${absencesCard()}`;
+}
+
+function startCalendarCard() {
+  const cal = state.calendar;
+  if (!cal.config) {
+    return `<button class="card banner" data-action="tab" data-tab="kalender">
+      <span class="banner-icon" aria-hidden="true">📅</span>
+      <span class="banner-text">Kalender<strong>Noch nicht verbunden</strong></span>
+      <span class="banner-arrow" aria-hidden="true">›</span>
+    </button>`;
+  }
+  const groups = groupByDay(cal.events ?? []).slice(0, 3);
+  const body = cal.error ? `<p class="error">${esc(calendarErrorText(cal.error))}</p>`
+    : !cal.events ? '<div class="center-pad"><div class="spinner"></div></div>'
+      : groups.length ? groups.map((g) => `
+        <div class="start-day">
+          <span class="start-day-title${sameDay(g.day, new Date()) ? ' today' : ''}">${dayTitle(g.day)}</span>
+          ${g.events.slice(0, 3).map((e) => `<span class="start-event"><span>${e.allDay ? 'ganztägig' : sameDay(e.start, g.day) ? timeOf(e.start) : 'läuft'}</span>${esc(e.title)}</span>`).join('')}
+        </div>`).join('')
+        : '<p class="empty">Keine Termine in den nächsten Wochen.</p>';
+  return `
+    <section class="card">
+      <div class="card-head"><h2>📅 Nächste Termine</h2><button class="link-btn" data-action="tab" data-tab="kalender">Ganzer Kalender ›</button></div>
+      ${body}
+    </section>`;
+}
+
+function startChoreCard(myChores) {
+  if (!myChores.length) {
+    return `<button class="card banner" data-action="tab" data-tab="putzplan">
+      <span class="banner-icon" aria-hidden="true">😎</span>
+      <span class="banner-text">Putzplan<strong>Diese Woche hast du frei</strong></span>
+      <span class="banner-arrow" aria-hidden="true">›</span>
+    </button>`;
+  }
+  return `
+    <section class="card">
+      <div class="card-head"><h2>🧹 Deine Aufgabe diese Woche</h2><button class="link-btn" data-action="tab" data-tab="putzplan">Putzplan ›</button></div>
+      ${myChores.map((c) => `
+        <div class="start-chore${c.doneBy ? ' done' : ''}">
+          <span class="start-chore-name">${c.chore.icon} ${esc(c.chore.name)}</span>
+          ${c.doneBy ? '<span class="done-label">✓ erledigt</span>'
+            : `<button class="btn small primary" data-action="chore-done-start" data-id="${c.docId}">Erledigt ✓</button>`}
+        </div>`).join('')}
+    </section>`;
+}
+
+// ---------- Abwesenheiten ----------
+
+function absencesCard() {
+  const list = upcomingAbsences(state.absences);
+  const items = list.map((a) => `
+    <li class="row">
+      ${avatar(a.person, true)}
+      <span class="row-name">${esc(personName(a.person))}
+        <small>${a.from === a.to ? shortDate(a.from) : `${shortDate(a.from)} – ${shortDate(a.to)}`}${a.note ? ` · ${esc(a.note)}` : ''}${isAwayOn(state.absences, a.person) && a.from <= isoDay(new Date()) ? ' · gerade weg' : ''}</small>
+      </span>
+      <button class="icon-btn small" data-action="absence-delete" data-id="${esc(a.id)}" aria-label="Abwesenheit löschen">✕</button>
+    </li>`).join('');
+  return `
+    <section class="card">
+      <div class="card-head"><h2>🌴 Wer ist weg?</h2><button class="link-btn" data-action="absence-new">＋ Eintragen</button></div>
+      ${items ? `<ul class="rows">${items}</ul>` : '<p class="empty">Alle sind da.</p>'}
+    </section>`;
+}
+
+function openAbsenceForm() {
+  $('#a-person').innerHTML = PEOPLE.map((p) => chip('absPerson', 'radio', p.id, p.name, p.id === state.me)).join('');
+  $('#a-from').value = todayISO();
+  $('#a-to').value = todayISO();
+  $('#a-note').value = '';
+  $('#a-error').textContent = '';
+  $('#absence-dialog').showModal();
+}
+
+function onSubmitAbsence(event) {
+  event.preventDefault();
+  const person = $('#absence-form input[name=absPerson]:checked')?.value ?? state.me;
+  const from = $('#a-from').value;
+  const to = $('#a-to').value;
+  if (!from || !to || to < from) {
+    $('#a-error').textContent = 'Bitte ein gültiges Von- und Bis-Datum wählen.';
+    return;
+  }
+  backend.add('absences', { person, from, to, note: $('#a-note').value.trim(), createdBy: state.me, createdAt: backend.now() }).catch(showError);
+  $('#absence-dialog').close();
+  toast('Eingetragen ✓ Der Putzplan passt sich an.');
+}
+
+function deleteAbsence(id) {
+  const absence = state.absences.find((a) => a.id === id);
+  if (absence) removeWithUndo('Abwesenheit gelöscht', [{ col: 'absences', doc: absence }]);
+}
+
+// ---------- Abstimmungen ----------
+
+function pollsCard() {
+  const weekAgo = Date.now() - 7 * 86400000;
+  const polls = state.polls
+    .filter((p) => !p.closed || toMillis(p.closedAt) > weekAgo)
+    .sort((a, b) => (a.closed - b.closed) || (toMillis(b.createdAt) - toMillis(a.createdAt)));
+  const cards = polls.map((p) => {
+    const votes = p.votes ?? {};
+    const counts = p.options.map((_, i) => PERSON_IDS.filter((id) => votes[id] === i));
+    const max = Math.max(...counts.map((c) => c.length));
+    const voted = PERSON_IDS.filter((id) => votes[id] != null).length;
+    return `
+      <div class="poll${p.closed ? ' closed' : ''}">
+        <p class="poll-question">${esc(p.question)}</p>
+        <div class="poll-options">${p.options.map((opt, i) => `
+          <button class="poll-option${votes[state.me] === i ? ' mine' : ''}${p.closed && max > 0 && counts[i].length === max ? ' winner' : ''}"
+            ${p.closed ? 'disabled' : `data-action="poll-vote" data-id="${esc(p.id)}" data-index="${i}"`}>
+            <span class="poll-text">${esc(opt)}</span>
+            <span class="poll-voters">${counts[i].map((id) => avatar(id, true)).join('')}</span>
+          </button>`).join('')}</div>
+        <div class="poll-foot">
+          <span>${p.closed ? 'Beendet' : `${voted} von ${PERSON_IDS.length} haben abgestimmt`}</span>
+          <span>
+            ${p.closed ? '' : `<button class="link-btn" data-action="poll-close" data-id="${esc(p.id)}">Beenden</button>`}
+            <button class="link-btn" data-action="poll-delete" data-id="${esc(p.id)}">Löschen</button>
+          </span>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <section class="card">
+      <div class="card-head"><h2>🗳️ Abstimmungen</h2><button class="link-btn" data-action="poll-new">＋ Neu</button></div>
+      ${cards || '<p class="empty">Gerade keine Abstimmung. Zum Beispiel: „Pizza oder Sushi am Freitag?“</p>'}
+    </section>`;
+}
+
+function pollOptionInput(value = '') {
+  return `<input class="poll-input" maxlength="60" placeholder="Antwort" value="${esc(value)}" autocomplete="off">`;
+}
+
+function openPollForm() {
+  $('#p-question').value = '';
+  $('#p-options').innerHTML = pollOptionInput() + pollOptionInput();
+  $('#p-error').textContent = '';
+  $('#poll-dialog').showModal();
+  $('#p-question').focus();
+}
+
+function onSubmitPoll(event) {
+  event.preventDefault();
+  const question = $('#p-question').value.trim();
+  const options = [...document.querySelectorAll('#p-options .poll-input')].map((i) => i.value.trim()).filter(Boolean);
+  const problem = !question ? 'Bitte eine Frage eingeben.' : options.length < 2 ? 'Bitte mindestens zwei Antworten eingeben.' : '';
+  if (problem) {
+    $('#p-error').textContent = problem;
+    return;
+  }
+  backend.add('polls', { question, options, votes: {}, closed: false, createdBy: state.me, createdAt: backend.now() }).catch(showError);
+  $('#poll-dialog').close();
+  toast('Abstimmung gestartet ✓');
+}
+
+function votePoll(id, index) {
+  const poll = state.polls.find((p) => p.id === id);
+  if (!poll || poll.closed) return;
+  // Nochmal auf die eigene Antwort tippen nimmt die Stimme zurück.
+  const value = poll.votes?.[state.me] === index ? null : index;
+  backend.update('polls', id, { [`votes.${state.me}`]: value }).catch(showError);
+}
+
+function closePoll(id) {
+  backend.update('polls', id, { closed: true, closedAt: backend.now() }).catch(showError);
+}
+
+function deletePoll(id) {
+  const poll = state.polls.find((p) => p.id === id);
+  if (poll) removeWithUndo('Abstimmung gelöscht', [{ col: 'polls', doc: poll }]);
+}
+
+// ---------- Suche bei den Ausgaben ----------
+
+function openSearch() {
+  $('#search-input').value = '';
+  renderSearch();
+  $('#search-dialog').showModal();
+  $('#search-input').focus();
+}
+
+function renderSearch() {
+  const q = $('#search-input').value.trim().toLowerCase();
+  const el = $('#search-results');
+  if (q.length < 2) {
+    el.innerHTML = '<p class="hint">Suche nach Beschreibung, Kategorie, Person oder Betrag – auch in früheren Abrechnungen.</p>';
+    return;
+  }
+  const hits = state.expenses.filter((e) => [
+    e.description, categoryOf(e.category).name, personName(e.paidBy),
+    formatEuro(e.amountCents), (e.amountCents / 100).toFixed(2).replace('.', ','),
+  ].some((t) => String(t).toLowerCase().includes(q)))
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+    .slice(0, 50);
+  el.innerHTML = hits.length
+    ? `<p class="hint">${hits.length === 50 ? 'Die neuesten 50 Treffer' : `${hits.length} ${hits.length === 1 ? 'Treffer' : 'Treffer'}`}</p>
+       <ul class="entries">${hits.map((e) => expenseRow({ ...e, date: e.date }, true).replace('<span class="entry-sub">', `<span class="entry-sub">${e.settlementId ? 'abgerechnet · ' : ''}`)).join('')}</ul>`
+    : '<p class="empty">Nichts gefunden.</p>';
+}
+
+// ---------- Sicherung zurückspielen ----------
+
+const RESTORE_COLLECTIONS = ['expenses', 'payments', 'settlements', 'recurring', 'shopping', 'favorites', 'chores', 'notes', 'absences', 'polls'];
+
+async function restoreBackup(file) {
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+  } catch {
+    toast('Die Datei konnte nicht gelesen werden.', true);
+    return;
+  }
+  if (data?.app !== 'Projekt Kölle') {
+    toast('Das ist keine Sicherung von Projekt Kölle.', true);
+    return;
+  }
+  const counts = RESTORE_COLLECTIONS.map((c) => (Array.isArray(data[c]) ? data[c].length : 0));
+  const total = counts.reduce((a, b) => a + b, 0);
+  const when = data.exportedAt ? new Date(data.exportedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }) : 'unbekannt';
+  if (!confirm(`Sicherung vom ${when} mit ${total} Einträgen zurückspielen?\n\nEinträge aus der Sicherung werden wiederhergestellt bzw. auf den Stand der Sicherung gesetzt. Neuere Einträge bleiben erhalten.`)) return;
+  for (const col of RESTORE_COLLECTIONS) {
+    for (const item of data[col] ?? []) {
+      if (!item?.id) continue;
+      const { id, ...rest } = item;
+      backend.set(col, id, rest).catch(showError);
+    }
+  }
+  if (Array.isArray(data.choreAreas) && data.choreAreas.length) {
+    backend.set('settings', 'putzplan', { areas: data.choreAreas, updatedBy: state.me, updatedAt: backend.now() }).catch(showError);
+  }
+  toast(`Sicherung zurückgespielt ✓ (${total} Einträge)`);
+}
+
+// ---------- Offline-Hinweis ----------
+
+function updateOnline() {
+  $('#offline-banner').hidden = navigator.onLine;
 }
 
 // ---------- Formular ----------
@@ -1344,16 +1647,16 @@ function onSubmitExpense(event) {
 function deleteExpense() {
   const id = state.editingId;
   if (state.formMode === 'recurring') {
-    if (!id || !confirm('Diesen Dauerauftrag löschen? Bereits eingetragene Ausgaben bleiben erhalten.')) return;
-    backend.remove('recurring', id).catch(showError);
+    const rec = state.recurring.find((r) => r.id === id);
+    if (!rec) return;
     $('#expense-dialog').close();
-    toast('Dauerauftrag gelöscht');
+    removeWithUndo('Dauerauftrag gelöscht (eingetragene Ausgaben bleiben)', [{ col: 'recurring', doc: rec }]);
     return;
   }
-  if (!id || !confirm('Diese Ausgabe wirklich löschen?')) return;
-  backend.remove('expenses', id).catch(showError);
+  const expense = state.expenses.find((e) => e.id === id);
+  if (!expense) return;
   $('#expense-dialog').close();
-  toast('Ausgabe gelöscht');
+  removeWithUndo('Ausgabe gelöscht', [{ col: 'expenses', doc: expense }]);
 }
 
 // ---------- Ausgleichen ----------
@@ -1371,8 +1674,8 @@ function markPaid(from, to, amountCents) {
 }
 
 function undoPayment(id) {
-  if (!confirm('Diese Überweisung wieder entfernen?')) return;
-  backend.remove('payments', id).catch(showError);
+  const payment = state.payments.find((p) => p.id === id);
+  if (payment) removeWithUndo('Überweisung entfernt', [{ col: 'payments', doc: payment }]);
 }
 
 function settleAll() {
@@ -1418,6 +1721,19 @@ function onClick(event) {
     case 'shop-delete': shopDelete(el.dataset.id); break;
     case 'shop-clear': shopClear(); break;
     case 'quick-add': quickAdd(el.dataset.id); break;
+    case 'chore-done-start': choreDoneThisWeek(el.dataset.id); break;
+    case 'absence-new': openAbsenceForm(); break;
+    case 'absence-delete': deleteAbsence(el.dataset.id); break;
+    case 'poll-new': openPollForm(); break;
+    case 'poll-add-option':
+      if (document.querySelectorAll('#p-options .poll-input').length < 6) $('#p-options').insertAdjacentHTML('beforeend', pollOptionInput());
+      break;
+    case 'poll-yesno': $('#p-options').innerHTML = pollOptionInput('Ja') + pollOptionInput('Nein'); break;
+    case 'poll-vote': votePoll(el.dataset.id, Number(el.dataset.index)); break;
+    case 'poll-close': closePoll(el.dataset.id); break;
+    case 'poll-delete': deletePoll(el.dataset.id); break;
+    case 'search-open': openSearch(); break;
+    case 'restore-open': $('#restore-file').click(); break;
     case 'shop-to-expense': shopToExpense(); break;
     case 'add-recurring': openExpenseForm(null, { mode: 'recurring' }); break;
     case 'edit-recurring': openExpenseForm(state.recurring.find((r) => r.id === el.dataset.id), { mode: 'recurring' }); break;
@@ -1466,6 +1782,23 @@ $('#expense-form').addEventListener('change', updateSplitHint);
 $('#areas-form').addEventListener('submit', onSubmitAreas);
 $('#calendar-form').addEventListener('submit', onSubmitCalendar);
 $('#note-form').addEventListener('submit', onSubmitNote);
+$('#absence-form').addEventListener('submit', onSubmitAbsence);
+$('#poll-form').addEventListener('submit', onSubmitPoll);
+$('#search-input').addEventListener('input', renderSearch);
+$('#restore-file').addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (file) restoreBackup(file);
+});
+$('#toast-undo').addEventListener('click', () => {
+  const undo = toastUndo;
+  $('#toast').className = 'toast';
+  toastUndo = null;
+  undo?.();
+});
+window.addEventListener('online', updateOnline);
+window.addEventListener('offline', updateOnline);
+updateOnline();
 // Termine regelmäßig und beim Zurückkehren zur App neu laden.
 setInterval(() => loadEvents(), 5 * 60 * 1000);
 document.addEventListener('visibilitychange', () => {

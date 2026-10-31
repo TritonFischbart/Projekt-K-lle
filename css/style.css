@@ -14,25 +14,9 @@
   --shadow: 0 1px 2px rgba(40, 20, 22, 0.06), 0 4px 16px rgba(40, 20, 22, 0.05);
   --radius: 18px;
   --tabbar-h: 64px;
-  color-scheme: light;
+  color-scheme: light; /* immer helles Design, auch wenn das Handy im Dunkelmodus ist */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #151112;
-    --card: #1f191a;
-    --text: #f0e8e9;
-    --muted: #a8999b;
-    --border: #352a2c;
-    --brand: #ff3b42;
-    --brand-dark: #ff8a8f;
-    --brand-soft: #3d1a1b;
-    --red: #ff7a6b;
-    --red-soft: #3a1f1c;
-    --shadow: none;
-    color-scheme: dark;
-  }
-}
 
 * { box-sizing: border-box; }
 
@@ -488,9 +472,6 @@ a.btn.full { width: 100%; }
 .event-title.muted { color: var(--muted); font-style: italic; font-weight: 400; }
 .card.notice { background: #fff4d6; border-color: #f0dca0; color: #5c4400; }
 .card.notice p { margin: 6px 0 0; font-size: 0.92rem; }
-@media (prefers-color-scheme: dark) {
-  .card.notice { background: #3a3218; border-color: #5a4c20; color: #f3e3b0; }
-}
 
 /* ---------- Monatsübersicht ---------- */
 .icon-btn[disabled] { opacity: 0.35; cursor: default; }
@@ -521,3 +502,60 @@ a.btn.full { width: 100%; }
 .field textarea { resize: vertical; min-height: 120px; }
 .field textarea:focus, .field select:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
 .tabbar button { font-size: 0.7rem; }
+
+/* ---------- Start: Übersicht ---------- */
+.start-hello { padding: 6px 2px 0; }
+.start-hello h1 { font-size: 1.6rem; }
+.start-hello p { margin: 4px 0 0; color: var(--muted); }
+.start-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.tile { display: grid; gap: 4px; text-align: left; padding: 16px; }
+.tile-icon { font-size: 1.5rem; }
+.tile-label { color: var(--muted); font-size: 0.85rem; }
+.tile-value { font-size: 1.15rem; }
+.start-day + .start-day { margin-top: 10px; }
+.start-day-title { display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
+.start-day-title.today { color: var(--brand); }
+.start-event { display: flex; gap: 10px; padding: 3px 0; font-weight: 600; }
+.start-event span { flex: none; width: 76px; color: var(--muted); font-weight: 500; font-size: 0.9rem; }
+.start-chore { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; }
+.start-chore-name { font-weight: 700; font-size: 1.05rem; }
+.start-chore.done .start-chore-name { text-decoration: line-through; color: var(--muted); }
+.back-link { justify-self: start; background: none; border: 0; padding: 4px 0; color: var(--brand); font-weight: 700; }
+
+/* ---------- Abstimmungen ---------- */
+.poll + .poll { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.poll-question { margin: 0 0 10px; font-weight: 700; font-size: 1.05rem; }
+.poll-options { display: grid; gap: 8px; }
+.poll-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 48px; padding: 8px 12px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--bg); text-align: left; font-weight: 600;
+}
+.poll-option.mine { border-color: var(--brand); background: var(--brand-soft); }
+.poll-option.winner { border-color: var(--brand); box-shadow: inset 4px 0 0 var(--brand); }
+.poll-option[disabled] { cursor: default; color: inherit; }
+.poll-voters { display: flex; gap: 2px; }
+.poll-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 0.82rem; }
+.poll-foot .link-btn + .link-btn { margin-left: 10px; }
+.poll-input {
+  width: 100%; min-height: 44px; padding: 8px 12px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--bg); font-size: 1rem;
+}
+
+/* ---------- Abwesenheit, Suche, Einkauf-Mengen ---------- */
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.search-input {
+  width: 100%; min-height: 48px; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--bg); font-size: 1rem;
+}
+.search-input:focus, .poll-input:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
+.shop-amount {
+  display: inline-block; margin-right: 4px; padding: 1px 7px; border-radius: 99px;
+  background: var(--brand-soft); color: var(--brand-dark); font-size: 0.85rem; font-weight: 700;
+}
+.demo-banner.offline { background: #2a2122; color: #fff; }
+
+/* ---------- Meldung mit "Rückgängig" ---------- */
+.toast { display: flex; align-items: center; gap: 14px; }
+.toast.has-action { pointer-events: auto; }
+.toast-undo { background: none; border: 0; padding: 0; color: #ffb3b6; font-weight: 800; white-space: nowrap; }

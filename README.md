@@ -2,8 +2,9 @@
 
 Die WG-Website von Jana, Jul und Lukas.
 
-- 💶 **Ausgaben** – wer hat was bezahlt, wer schuldet wem wie viel, Ausgleichen mit möglichst wenigen Überweisungen, Daueraufträge und Monatsübersicht
-- 📅 **Kalender** – Termine aus dem gemeinsamen Google-Kalender, „Heute“ auf der Startseite
+- 💶 **Ausgaben** – wer hat was bezahlt, wer schuldet wem wie viel, Ausgleichen mit möglichst wenigen Überweisungen, Daueraufträge, Monatsübersicht und Suche
+- 🏠 **Start** – Übersicht mit Terminen, Kontostand, Einkauf, Putzaufgabe, Abstimmungen und „Wer ist weg?“
+- 📅 **Kalender** – Termine aus dem gemeinsamen Google-Kalender (über die Startseite)
 - 🛒 **Einkauf** – gemeinsame Einkaufsliste, sortiert wie im Supermarkt, mit Schnellauswahl; Besorgtes wird durchgestrichen
 - 🧹 **Putzplan** – Bereiche direkt in der App bearbeitbar; wechselt jede Woche, mit Erledigt-Haken und „Ich übernehme“
 - 📌 **Infos** – Schwarzes Brett und Datensicherung
@@ -25,6 +26,7 @@ Ausprobieren ohne Einrichtung: die Website mit `?demo` am Ende der Adresse öffn
 | `js/recurring.js` | Daueraufträge |
 | `js/stats.js` | Monatsübersicht |
 | `js/export.js` | Datensicherung |
+| `js/absences.js` | Urlaubs-Modus |
 | `js/config.js` | Namen, Kategorien und Standard-Putzbereiche |
 | `js/firebase-config.js` | Verbindungsdaten zu Firebase |
 | `js/firebase.js` | Anmeldung und gemeinsame Datenbank |

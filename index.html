@@ -4,15 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ed1c24">
+  <meta name="color-scheme" content="light">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kölle">
   <title>Projekt Kölle</title>
-  <link rel="icon" href="icons/icon.svg?v=12" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=12">
-  <link rel="manifest" href="manifest.webmanifest?v=12">
-  <link rel="stylesheet" href="css/style.css?v=12">
-  <script type="module" src="js/app.js?v=12"></script>
+  <link rel="icon" href="icons/icon.svg?v=14" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=14">
+  <link rel="manifest" href="manifest.webmanifest?v=14">
+  <link rel="stylesheet" href="css/style.css?v=14">
+  <script type="module" src="js/app.js?v=14"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -23,7 +24,7 @@
   <!-- Firebase ist noch nicht eingerichtet -->
   <div id="screen-setup" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=12" alt="" class="logo">
+      <img src="icons/icon.svg?v=14" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
       <a class="btn primary" href="?demo">Demo ansehen</a>
@@ -33,7 +34,7 @@
   <!-- Anmelden -->
   <div id="screen-login" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=12" alt="" class="logo">
+      <img src="icons/icon.svg?v=14" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p>Die WG-Seite von Jana, Jul und Lukas.</p>
       <button class="btn primary" data-action="login">Mit Google anmelden</button>
@@ -62,13 +63,16 @@
   <!-- Die eigentliche App -->
   <div id="screen-app" class="screen" hidden>
     <header class="topbar">
-      <div class="brand"><img src="icons/icon.svg?v=12" alt=""> Projekt Kölle</div>
+      <div class="brand"><img src="icons/icon.svg?v=14" alt=""> Projekt Kölle</div>
       <button class="me-button" id="me-button" data-action="logout"></button>
     </header>
     <div id="demo-banner" class="demo-banner" hidden>Demo-Modus – nichts wird gespeichert</div>
+    <div id="offline-banner" class="demo-banner offline" hidden>📴 Du bist offline – deine Änderungen werden gespeichert, sobald du wieder Netz hast.</div>
 
     <main>
-      <section id="tab-ausgaben" class="tab"></section>
+      <section id="tab-start" class="tab"></section>
+
+      <section id="tab-ausgaben" class="tab" hidden></section>
 
       <section id="tab-einkauf" class="tab" hidden>
         <form id="shop-form" class="card shop-add" autocomplete="off">
@@ -89,10 +93,10 @@
     <button class="fab" data-action="add-expense"><span aria-hidden="true">＋</span> Ausgabe</button>
 
     <nav class="tabbar">
-      <button data-action="tab" data-tab="ausgaben" aria-current="page"><span class="tab-icon">💶</span>Ausgaben</button>
+      <button data-action="tab" data-tab="start" aria-current="page"><span class="tab-icon">🏠</span>Start</button>
+      <button data-action="tab" data-tab="ausgaben"><span class="tab-icon">💶</span>Ausgaben</button>
       <button data-action="tab" data-tab="einkauf"><span class="tab-icon">🛒</span>Einkauf</button>
       <button data-action="tab" data-tab="putzplan"><span class="tab-icon">🧹</span>Putzplan</button>
-      <button data-action="tab" data-tab="kalender"><span class="tab-icon">📅</span>Kalender</button>
       <button data-action="tab" data-tab="infos"><span class="tab-icon">📌</span>Infos</button>
     </nav>
   </div>
@@ -230,6 +234,72 @@
     </div>
   </dialog>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <!-- Formular: Abwesenheit / Urlaub -->
+  <dialog id="absence-dialog" class="sheet">
+    <form id="absence-form" class="sheet-form" novalidate>
+      <div class="sheet-head">
+        <h2>Ich bin nicht da</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <fieldset class="field">
+        <legend class="label">Wer?</legend>
+        <div class="chips" id="a-person"></div>
+      </fieldset>
+      <div class="field-row">
+        <label class="field"><span class="label">Von</span><input type="date" id="a-from"></label>
+        <label class="field"><span class="label">Bis</span><input type="date" id="a-to"></label>
+      </div>
+      <label class="field">
+        <span class="label">Notiz (optional)</span>
+        <input id="a-note" maxlength="60" placeholder="z. B. Urlaub in Italien" autocomplete="off">
+      </label>
+      <p class="hint">Wer in einer Woche mindestens 4 Tage weg ist, bekommt in dieser Woche keine Putzaufgabe.</p>
+      <p class="error" id="a-error"></p>
+      <div class="form-actions"><button type="submit" class="btn primary">Speichern</button></div>
+    </form>
+  </dialog>
+
+  <!-- Formular: Neue Abstimmung -->
+  <dialog id="poll-dialog" class="sheet">
+    <form id="poll-form" class="sheet-form" novalidate>
+      <div class="sheet-head">
+        <h2>Neue Abstimmung</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <label class="field">
+        <span class="label">Frage</span>
+        <input id="p-question" maxlength="100" placeholder="z. B. Pizza oder Sushi am Freitag?" autocomplete="off">
+      </label>
+      <fieldset class="field">
+        <legend class="label">Antworten</legend>
+        <div id="p-options" class="stack"></div>
+        <div class="chips">
+          <button type="button" class="chip-btn" data-action="poll-add-option">＋ Antwort</button>
+          <button type="button" class="chip-btn" data-action="poll-yesno">Ja / Nein</button>
+        </div>
+      </fieldset>
+      <p class="error" id="p-error"></p>
+      <div class="form-actions"><button type="submit" class="btn primary">Abstimmung starten</button></div>
+    </form>
+  </dialog>
+
+  <!-- Suche bei den Ausgaben -->
+  <dialog id="search-dialog" class="sheet">
+    <div class="sheet-form">
+      <div class="sheet-head">
+        <h2>Ausgaben suchen</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <input id="search-input" class="search-input" type="search" placeholder="z. B. Klopapier, Jana, 12,50" autocomplete="off" enterkeyhint="search">
+      <div id="search-results"></div>
+    </div>
+  </dialog>
+
+  <input type="file" id="restore-file" accept="application/json,.json" hidden>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    <span id="toast-text"></span>
+    <button type="button" id="toast-undo" class="toast-undo" hidden>Rückgängig</button>
+  </div>
 </body>
 </html>

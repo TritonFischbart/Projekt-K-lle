@@ -1,7 +1,7 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=12';
+import { weekKey } from './chores.js?v=14';
 
 function thisMonth() {
   const d = new Date();
@@ -49,6 +49,13 @@ export function createDemoBackend() {
       // lastBooked im Vormonat -> wird beim Öffnen der Demo automatisch für diesen Monat eingetragen
       { id: 'r1', description: 'Internet', amountCents: 3999, paidBy: 'lukas', splitAmong: all, category: 'nebenkosten', dayOfMonth: 1, lastBooked: lastMonth() },
       { id: 'r2', description: 'Netflix', amountCents: 1799, paidBy: 'jana', splitAmong: all, category: 'freizeit', dayOfMonth: 28, lastBooked: thisMonth() },
+    ],
+    absences: [
+      { id: 'a1', person: 'jana', from: daysAgo(-1), to: daysAgo(-4), note: 'Hamburg' },
+      { id: 'a2', person: 'julian', from: daysAgo(-20), to: daysAgo(-27), note: 'Urlaub' },
+    ],
+    polls: [
+      { id: 'p1', question: 'Pizza oder Sushi am Freitag?', options: ['Pizza 🍕', 'Sushi 🍣', 'Selber kochen'], votes: { jana: 1, julian: 0 }, closed: false, createdBy: 'jana', createdAt: created(1) },
     ],
     notes: [
       { id: 'n1', title: '📶 WLAN', text: 'Netzwerk: Koelle-WG\nPasswort: DomBlick2026!', createdBy: 'lukas', createdAt: created(20), updatedBy: 'lukas', updatedAt: created(20) },
@@ -116,7 +123,13 @@ export function createDemoBackend() {
       notify(name);
     },
     async update(name, id, data) {
-      Object.assign(find(name, id), data);
+      const item = find(name, id);
+      // "votes.lukas" wie bei Firestore: verschachteltes Feld setzen
+      for (const [key, value] of Object.entries(data)) {
+        const [field, sub] = key.split('.');
+        if (sub) item[field] = { ...(item[field] ?? {}), [sub]: value };
+        else item[key] = value;
+      }
       notify(name);
     },
     async remove(name, id) {

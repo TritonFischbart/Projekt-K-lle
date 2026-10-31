@@ -14,6 +14,8 @@ früheren Gesprächen besprochen und entschieden wurde.
 - Auftraggeber ist **Lukas** (GitHub-Konto `TritonFischbart`). „Triton“ war ein
   früherer Platzhalter-Name – in der App heißt er **Lukas**.
 - **Jul** heißt intern weiterhin `julian` (die ID bleibt, damit alte Daten passen).
+- **Es wird keine neuen Mitbewohner geben** – eine Funktion zum Wechseln von Personen
+  ist ausdrücklich nicht gewünscht.
 - Live: **https://tritonfischbart.github.io/Projekt-K-lle/**
 - Demo mit Beispieldaten (ohne Login, speichert nichts): an die Adresse `?demo` anhängen.
 
@@ -61,7 +63,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | Datei | Inhalt |
 |---|---|
 | `index.html` | Gerüst, Tabs, Dialoge (Ausgabe, Putz-Bereiche, Kalender, Einkaufs-Kategorie) |
-| `css/style.css` | Design (rot-weiß, hell/dunkel, Handy & iPad) |
+| `css/style.css` | Design (rot-weiß, immer hell, Handy & iPad) |
 | `js/app.js` | Hauptprogramm: Anmeldung, Anzeige, Bedienung aller Bereiche |
 | `js/config.js` | Personen (Reihenfolge/Farben), Ausgaben-Kategorien, Standard-Putzbereiche |
 | `js/money.js` | Geld in Cent, Aufteilen, Kontostände, Ausgleichs-Vorschlag |
@@ -71,6 +73,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `js/recurring.js` | Daueraufträge: welche Monate fällig sind |
 | `js/stats.js` | Monatsübersicht der Ausgaben |
 | `js/export.js` | Datensicherung (JSON) und Ausgaben-Tabelle (CSV für Excel) |
+| `js/absences.js` | Urlaubs-Modus: wer wann weg ist |
 | `js/firebase.js` | Firebase-Anbindung (Backend) |
 | `js/demo.js` | Demo-Backend mit Beispieldaten (`?demo`) |
 | `manifest.webmanifest`, `icons/` | App-Symbol (Kölner Dom) für den Home-Bildschirm |
@@ -104,6 +107,8 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `recurring` | Daueraufträge: `description, amountCents, paidBy, splitAmong, category, dayOfMonth (1–28), lastBooked ("2026-11")` |
 | `notes` | Schwarzes Brett: `title, text, createdBy, updatedBy` |
 | `settings/backup` | Wann zuletzt gesichert wurde (`at`, `by`) |
+| `absences` | Abwesenheiten: `person, from, to ("2026-11-10"), note` |
+| `polls` | Abstimmungen: `question, options[], votes {person: index}, closed, closedAt` (Stimme per `votes.{person}` speichern) |
 
 Ausgaben aus Daueraufträgen haben die feste ID `rec_{auftrag}_{monat}` und das Feld
 `recurringId` – so wird auch bei zwei gleichzeitig geöffneten Handys nichts doppelt gebucht.
@@ -117,12 +122,19 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   rote Kopfzeile, weißer Hintergrund, rotes Logo). Anfangs war es grün – Lukas wollte
   ausdrücklich **kein Grün mehr im Design**. Wer Geld bekommt/schuldet, zeigen Text und
   Vorzeichen (+ / −), nicht die Farbe. (Lukas' Personenfarbe ist weiterhin grün.)
+- **Immer heller Hintergrund** – kein Dunkelmodus, auch wenn das Handy auf dunkel steht
+  (Lukas fand das helle Design auf den Testbildern „perfekt“).
 - Lukas wollte **keine Putz-Statistik** („wer wie oft geputzt hat“) – klingt blöd. Nicht wieder einbauen.
 - Personen-Reihenfolge: **Jana, Jul, Lukas**. Farben: Jana hellbraun `#a97b50`,
   Jul blau `#2b6cb0`, Lukas grün `#2f7d4f`.
-- Untere Leiste: **Ausgaben · Einkauf · Putzplan · Kalender · Infos**.
-- Startseite (Ausgaben) zeigt oben Hinweise: „Heute in der WG“ (Kalender) und
-  „Diese Woche bist du dran mit …“ (Putzplan).
+- Untere Leiste: **Start · Ausgaben · Einkauf · Putzplan · Infos**. Der **Kalender**
+  hat keinen eigenen Knopf mehr – er hängt an der Startseite („Ganzer Kalender ›“,
+  „‹ Zur Übersicht“), damit die Leiste auf dem Handy nicht zu voll wird.
+- **Start (Übersicht)**: Begrüßung, nächste Termine, Kontostand, Einkaufsliste, eigene
+  Putzaufgabe (mit „Erledigt“), Abstimmungen, „Wer ist weg?“.
+- **Rückgängig**: Gelöschte Ausgaben, Daueraufträge, Überweisungen, Einkäufe, Notizen,
+  Abstimmungen und Abwesenheiten lassen sich 6 Sekunden lang über die Meldung zurückholen.
+- **Offline-Hinweis** oben, wenn das Handy kein Netz hat (Firestore speichert später).
 - Kann als App auf den Home-Bildschirm gelegt werden (Manifest + Icons).
 
 ### 💶 Ausgaben
@@ -130,6 +142,8 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - Kategorien: Lebensmittel, Haushalt, Internet & Strom, Freizeit, Sonstiges.
 - Einträge bearbeiten und löschen erlaubt.
 - Ausgleichs-Vorschlag mit möglichst wenigen Überweisungen.
+- **Suche** („🔍 Suchen“ bei den Einträgen): Beschreibung, Kategorie, Person, Betrag –
+  auch in früheren Abrechnungen.
 - „Ausgeglichen“: beides gewünscht – einzelne Überweisungen abhaken **und**
   „Alles ausgeglichen – neu starten“ (alles auf 0, alte Einträge unter
   „Frühere Abrechnungen“).
@@ -142,6 +156,8 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - Jeder trägt ein, was fehlt (mehrere mit Komma). Antippen = besorgt
   (durchgestrichen, mit Name). „Liste aufräumen“ entfernt Besorgtes.
 - **Schnellauswahl**: ab 2× eingetragen erscheint ein Knopf; „Bearbeiten“ zum Entfernen.
+- **Mengen**: „2x Milch“, „Milch 2x“, „500 g Hack“, „3 Dosen Tomaten“ → Menge wird
+  als kleines Schild angezeigt (Feld `amount`), Name bleibt für Kategorie/Schnellauswahl.
 - **Als Ausgabe eintragen**: eigene besorgte Sachen werden mit einem Tipp als Ausgabe
   vorausgefüllt (nur noch Betrag eingeben).
 - **Kategorien in Supermarkt-Reihenfolge** (orientiert am Weg durch einen
@@ -156,20 +172,33 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - Wechsel **jede Woche** (Montag), Rotation der Reihe nach.
 - „Erledigt ✓“, „Ich übernehme“ (spontan tauschen), „Zurückgeben“.
 - Erinnerungen vorerst nur als Hinweis in der App (roter Punkt, Startseite).
+- **Urlaubs-Modus**: Wer in einer Woche mindestens 4 Tage weg ist, bekommt keine
+  Putzaufgabe; seine Bereiche gehen an die Anwesenden („statt Jana – nicht da“).
+
+### 🗳️ Abstimmungen
+- Auf der Startseite: Frage + 2–6 Antworten (oder „Ja / Nein“). Antippen = abstimmen,
+  nochmal tippen = Stimme zurücknehmen. „Beenden“ zeigt das Ergebnis (bleibt 7 Tage sichtbar).
+  Roter Punkt an „Start“, solange man selbst noch nicht abgestimmt hat.
 
 ### 📌 Infos
 - **Schwarzes Brett**: Notizen mit Vorlagen (WLAN, Vermieter, Zählerstände, Schlüssel,
   Notfall). „Text kopieren“ z. B. fürs WLAN-Passwort.
 - **Datensicherung**: „Alle Daten sichern“ (JSON, ohne API-Schlüssel) und „Ausgaben
   als Tabelle (Excel)“. Auf dem Handy über „Teilen“ speichern. Hinweis, wenn die letzte
-  Sicherung über 30 Tage her ist. Ein Wiederherstellen gibt es (noch) nicht – bei Bedarf
-  kann Claude die Daten aus der Datei zurückspielen.
+  Sicherung über 30 Tage her ist.
+- **Sicherung zurückspielen**: JSON-Datei auswählen → Einträge aus der Sicherung werden
+  wiederhergestellt/auf deren Stand gesetzt, neuere Einträge bleiben erhalten.
 
 ### 📅 Kalender
 - Variante „eigenes Design“ (nicht eingebettet): nächste 60 Tage, gruppiert nach Tagen,
   „＋ Termin eintragen“ öffnet Google Kalender, Aktualisierung alle 5 Minuten.
 
-## Ideen für später (noch nicht gebaut)
+## Merkliste / To-do für später (noch nicht gebaut)
+
+- **Termine direkt in der App eintragen** (statt über Google Kalender). Von Lukas
+  ausdrücklich auf die Merkliste gesetzt. Hürde: Schreibzugriff auf Google Kalender
+  braucht eine Google-Anmeldung mit Kalender-Berechtigung (OAuth, Zustimmungsbildschirm
+  in der Google Cloud Console, im Testmodus Nutzer eintragen) – vorher mit Lukas klären.
 
 - **Push-Nachrichten** (z. B. Putz-Erinnerung) – Lukas will das später.
   Zeitgesteuerte Erinnerungen bräuchten vermutlich Cloud Functions → Firebase-Tarif
