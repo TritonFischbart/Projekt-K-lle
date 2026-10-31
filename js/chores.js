@@ -38,3 +38,4 @@ export function defaultAssignee(peopleIds, choreIndex, weekIdx) {
   const n = peopleIds.length;
   return peopleIds[(((choreIndex + weekIdx) % n) + n) % n];
 }
+

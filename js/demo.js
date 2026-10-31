@@ -1,7 +1,19 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=9';
+import { weekKey } from './chores.js?v=12';
+
+function thisMonth() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function lastMonth() {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
 function daysAgo(n) {
   const d = new Date();
@@ -33,6 +45,15 @@ export function createDemoBackend() {
       { id: 's1', createdAt: created(28), createdBy: 'jana', expenseCount: 2, totalCents: 5450 },
     ],
     chores: [],
+    recurring: [
+      // lastBooked im Vormonat -> wird beim Öffnen der Demo automatisch für diesen Monat eingetragen
+      { id: 'r1', description: 'Internet', amountCents: 3999, paidBy: 'lukas', splitAmong: all, category: 'nebenkosten', dayOfMonth: 1, lastBooked: lastMonth() },
+      { id: 'r2', description: 'Netflix', amountCents: 1799, paidBy: 'jana', splitAmong: all, category: 'freizeit', dayOfMonth: 28, lastBooked: thisMonth() },
+    ],
+    notes: [
+      { id: 'n1', title: '📶 WLAN', text: 'Netzwerk: Koelle-WG\nPasswort: DomBlick2026!', createdBy: 'lukas', createdAt: created(20), updatedBy: 'lukas', updatedAt: created(20) },
+      { id: 'n2', title: '🏠 Vermieter & Hausverwaltung', text: 'Herr Beispiel\nTelefon: 0221 123456', createdBy: 'jana', createdAt: created(15), updatedBy: 'jana', updatedAt: created(4) },
+    ],
     settings: [
       { id: 'kalender', calendarId: 'demo@group.calendar.google.com', apiKey: 'AIzaDemoDemoDemoDemoDemoDemo' },
     ],

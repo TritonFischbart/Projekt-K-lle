@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#c8102e">
+  <meta name="theme-color" content="#ed1c24">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kölle">
   <title>Projekt Kölle</title>
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/style.css?v=9">
-  <script type="module" src="js/app.js?v=9"></script>
+  <link rel="icon" href="icons/icon.svg?v=12" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=12">
+  <link rel="manifest" href="manifest.webmanifest?v=12">
+  <link rel="stylesheet" href="css/style.css?v=12">
+  <script type="module" src="js/app.js?v=12"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -23,7 +23,7 @@
   <!-- Firebase ist noch nicht eingerichtet -->
   <div id="screen-setup" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg" alt="" class="logo">
+      <img src="icons/icon.svg?v=12" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
       <a class="btn primary" href="?demo">Demo ansehen</a>
@@ -33,7 +33,7 @@
   <!-- Anmelden -->
   <div id="screen-login" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg" alt="" class="logo">
+      <img src="icons/icon.svg?v=12" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p>Die WG-Seite von Jana, Jul und Lukas.</p>
       <button class="btn primary" data-action="login">Mit Google anmelden</button>
@@ -62,7 +62,7 @@
   <!-- Die eigentliche App -->
   <div id="screen-app" class="screen" hidden>
     <header class="topbar">
-      <div class="brand"><img src="icons/icon.svg" alt=""> Projekt Kölle</div>
+      <div class="brand"><img src="icons/icon.svg?v=12" alt=""> Projekt Kölle</div>
       <button class="me-button" id="me-button" data-action="logout"></button>
     </header>
     <div id="demo-banner" class="demo-banner" hidden>Demo-Modus – nichts wird gespeichert</div>
@@ -81,6 +81,8 @@
 
       <section id="tab-kalender" class="tab" hidden></section>
 
+      <section id="tab-infos" class="tab" hidden></section>
+
       <section id="tab-putzplan" class="tab" hidden></section>
     </main>
 
@@ -91,6 +93,7 @@
       <button data-action="tab" data-tab="einkauf"><span class="tab-icon">🛒</span>Einkauf</button>
       <button data-action="tab" data-tab="putzplan"><span class="tab-icon">🧹</span>Putzplan</button>
       <button data-action="tab" data-tab="kalender"><span class="tab-icon">📅</span>Kalender</button>
+      <button data-action="tab" data-tab="infos"><span class="tab-icon">📌</span>Infos</button>
     </nav>
   </div>
 
@@ -131,9 +134,15 @@
         <p class="hint" id="f-split-hint"></p>
       </fieldset>
 
-      <label class="field">
+      <label class="field" id="f-date-row">
         <span class="label">Datum</span>
         <input type="date" id="f-date">
+      </label>
+
+      <label class="field" id="f-day-row" hidden>
+        <span class="label">Jeden Monat am</span>
+        <select id="f-day"></select>
+        <span class="hint">Wird an diesem Tag automatisch als Ausgabe eingetragen.</span>
       </label>
 
       <p class="error" id="f-error"></p>
@@ -181,6 +190,29 @@
       <p class="error" id="c-error"></p>
       <div class="form-actions">
         <button type="button" class="btn danger" id="c-remove" data-action="calendar-remove">Trennen</button>
+        <button type="submit" class="btn primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Formular: Notiz am Schwarzen Brett -->
+  <dialog id="note-dialog" class="sheet">
+    <form id="note-form" class="sheet-form" novalidate>
+      <div class="sheet-head">
+        <h2 id="note-title-head">Neue Notiz</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <label class="field">
+        <span class="label">Überschrift</span>
+        <input id="n-title" maxlength="60" placeholder="z. B. WLAN" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="label">Text</span>
+        <textarea id="n-text" rows="6" maxlength="2000" placeholder="z. B. Netzwerk: FRITZ!Box 7590&#10;Passwort: …"></textarea>
+      </label>
+      <p class="error" id="n-error"></p>
+      <div class="form-actions">
+        <button type="button" class="btn danger" id="n-delete" data-action="note-delete">Löschen</button>
         <button type="submit" class="btn primary">Speichern</button>
       </div>
     </form>

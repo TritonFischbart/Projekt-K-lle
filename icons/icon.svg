@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#c8102e"/>
+  <rect width="512" height="512" rx="112" fill="#ed1c24"/>
   <!-- Kölner Dom: Westfassade mit zwei Türmen -->
   <g fill="#ffffff">
     <!-- linker Turm -->
@@ -21,7 +21,7 @@
     <!-- Boden -->
     <rect x="136" y="436" width="240" height="14" rx="5"/>
   </g>
-  <g fill="#c8102e">
+  <g fill="#ed1c24">
     <!-- durchbrochene Turmhelme -->
     <rect x="178" y="168" width="26" height="4"/>
     <rect x="183" y="138" width="16" height="4"/>

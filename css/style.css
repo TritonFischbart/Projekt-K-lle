@@ -6,11 +6,9 @@
   --text: #221b1c;
   --muted: #6e6466;
   --border: #ece4e5;
-  --brand: #c8102e;
-  --brand-dark: #a00c24;
-  --brand-soft: #fbe8eb;
-  /* Bedeutungsfarben: Grün = bekommt Geld, Rot = schuldet */
-  --green: #2f7d4f;
+  --brand: #ed1c24;      /* kräftiges Rot wie beim 1. FC Köln */
+  --brand-dark: #c4121a;
+  --brand-soft: #fde8e9;
   --red: #b42318;
   --red-soft: #fbeae8;
   --shadow: 0 1px 2px rgba(40, 20, 22, 0.06), 0 4px 16px rgba(40, 20, 22, 0.05);
@@ -26,10 +24,9 @@
     --text: #f0e8e9;
     --muted: #a8999b;
     --border: #352a2c;
-    --brand: #ef4a5f;
-    --brand-dark: #ff8794;
-    --brand-soft: #3a1c21;
-    --green: #4caf75;
+    --brand: #ff3b42;
+    --brand-dark: #ff8a8f;
+    --brand-soft: #3d1a1b;
     --red: #ff7a6b;
     --red-soft: #3a1f1c;
     --shadow: none;
@@ -157,7 +154,7 @@ main {
   border: 0; border-radius: 999px;
   background: var(--brand); color: #fff;
   font-weight: 700; font-size: 1rem;
-  box-shadow: 0 6px 20px rgba(200, 16, 46, 0.35);
+  box-shadow: 0 6px 20px rgba(237, 28, 36, 0.35);
 }
 .fab span { font-size: 1.2rem; line-height: 1; }
 
@@ -174,8 +171,8 @@ main {
 .card-head h2 { margin: 0; }
 
 .hero { text-align: center; padding: 22px 18px; border: 0; }
-.hero.plus { background: var(--green); color: #fff; }
-.hero.minus { background: var(--red); color: #fff; }
+.hero.plus { background: var(--brand); color: #fff; }
+.hero.minus { background: var(--brand-dark); color: #fff; }
 .hero.even { background: var(--brand-soft); }
 .hero-label { margin: 0; font-weight: 600; opacity: 0.9; }
 .hero-amount { margin: 4px 0 0; font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em; }
@@ -200,8 +197,8 @@ main {
 .avatar.small { width: 28px; height: 28px; font-size: 0.8rem; }
 
 .amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.amount.plus { color: var(--green); }
-.amount.minus { color: var(--red); }
+.amount.plus { color: var(--text); }
+.amount.minus { color: var(--brand); }
 .amount.even { color: var(--muted); font-weight: 600; }
 
 /* ---------- Ausgleichen ---------- */
@@ -382,7 +379,7 @@ main {
 .chore-who { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-weight: 600; font-size: 0.92rem; }
 .chore-who em { font-style: normal; font-weight: 400; color: var(--muted); }
 .chore-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-.done-label { color: var(--green); font-weight: 700; font-size: 0.9rem; }
+.done-label { color: var(--brand); font-weight: 700; font-size: 0.9rem; }
 
 .plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .plan-row { display: grid; grid-template-columns: 52px repeat(3, 1fr); gap: 6px; align-items: center; }
@@ -494,3 +491,33 @@ a.btn.full { width: 100%; }
 @media (prefers-color-scheme: dark) {
   .card.notice { background: #3a3218; border-color: #5a4c20; color: #f3e3b0; }
 }
+
+/* ---------- Monatsübersicht ---------- */
+.icon-btn[disabled] { opacity: 0.35; cursor: default; }
+.month-total { margin: 4px 0 12px; text-align: center; font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.month-total small { display: block; font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+.trend { display: flex; align-items: flex-end; gap: 8px; height: 96px; margin-bottom: 8px; }
+.trend-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.trend-bar { width: 100%; max-width: 36px; border-radius: 6px 6px 2px 2px; background: var(--brand-soft); }
+.trend-col.active .trend-bar { background: var(--brand); }
+.trend-col span { font-size: 0.72rem; color: var(--muted); }
+.trend-col.active span { color: var(--text); font-weight: 700; }
+.sub-title { margin: 16px 0 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+
+/* ---------- Putz-Statistik ---------- */
+.row-name .bar-track { display: block; margin-top: 6px; }
+.row-name .bar-fill { display: block; }
+
+/* ---------- Infos: Schwarzes Brett ---------- */
+.card .hint.left { text-align: left; margin: 0 0 10px; }
+.note-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1rem; }
+.note-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; color: var(--muted); font-size: 0.82rem; }
+.field textarea, .field select {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--bg); font: inherit; font-size: 1rem; color: inherit;
+}
+.field select { min-height: 48px; }
+.field textarea { resize: vertical; min-height: 120px; }
+.field textarea:focus, .field select:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
+.tabbar button { font-size: 0.7rem; }
