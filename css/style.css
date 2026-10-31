@@ -6,9 +6,9 @@
   --text: #221b1c;
   --muted: #6e6466;
   --border: #ece4e5;
-  --brand: #c8102e;
-  --brand-dark: #a00c24;
-  --brand-soft: #fbe8eb;
+  --brand: #ed1c24;      /* kräftiges Rot wie beim 1. FC Köln */
+  --brand-dark: #c4121a;
+  --brand-soft: #fde8e9;
   --red: #b42318;
   --red-soft: #fbeae8;
   --shadow: 0 1px 2px rgba(40, 20, 22, 0.06), 0 4px 16px rgba(40, 20, 22, 0.05);
@@ -24,9 +24,9 @@
     --text: #f0e8e9;
     --muted: #a8999b;
     --border: #352a2c;
-    --brand: #ef4a5f;
-    --brand-dark: #ff8794;
-    --brand-soft: #3a1c21;
+    --brand: #ff3b42;
+    --brand-dark: #ff8a8f;
+    --brand-soft: #3d1a1b;
     --red: #ff7a6b;
     --red-soft: #3a1f1c;
     --shadow: none;
@@ -154,7 +154,7 @@ main {
   border: 0; border-radius: 999px;
   background: var(--brand); color: #fff;
   font-weight: 700; font-size: 1rem;
-  box-shadow: 0 6px 20px rgba(200, 16, 46, 0.35);
+  box-shadow: 0 6px 20px rgba(237, 28, 36, 0.35);
 }
 .fab span { font-size: 1.2rem; line-height: 1; }
 

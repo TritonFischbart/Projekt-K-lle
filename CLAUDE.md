@@ -113,7 +113,7 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 
 ### Allgemein
 - Name **„Projekt Kölle“**, Logo: **Kölner Dom** (Westfassade, zwei Türme), weiß auf rotem Grund.
-- Design konsequent in den **Kölner Stadtfarben Rot und Weiß** (`--brand: #c8102e`,
+- Design konsequent in den **Kölner Stadtfarben Rot und Weiß** (`--brand: #ed1c24`, kräftiges Rot wie beim 1. FC Köln,
   rote Kopfzeile, weißer Hintergrund, rotes Logo). Anfangs war es grün – Lukas wollte
   ausdrücklich **kein Grün mehr im Design**. Wer Geld bekommt/schuldet, zeigen Text und
   Vorzeichen (+ / −), nicht die Farbe. (Lukas' Personenfarbe ist weiterhin grün.)
