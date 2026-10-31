@@ -11,8 +11,8 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/style.css">
-  <script type="module" src="js/app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=4">
+  <script type="module" src="js/app.js?v=4"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -70,6 +70,14 @@
     <main>
       <section id="tab-ausgaben" class="tab"></section>
 
+      <section id="tab-einkauf" class="tab" hidden>
+        <form id="shop-form" class="card shop-add" autocomplete="off">
+          <input id="shop-input" maxlength="60" placeholder="Was fehlt? z. B. Milch, Eier" enterkeyhint="done" aria-label="Was fehlt?">
+          <button type="submit" class="btn primary">Dazu</button>
+        </form>
+        <div id="shop-list" class="stack"></div>
+      </section>
+
       <section id="tab-kalender" class="tab" hidden>
         <div class="card soon">
           <div class="soon-icon">📅</div>
@@ -78,27 +86,22 @@
         </div>
       </section>
 
-      <section id="tab-putzplan" class="tab" hidden>
-        <div class="card soon">
-          <div class="soon-icon">🧹</div>
-          <h2>Putzplan</h2>
-          <p>Hier kommt bald euer Putzplan hin – mit wöchentlichem Wechsel und Tausch-Option.</p>
-        </div>
-      </section>
+      <section id="tab-putzplan" class="tab" hidden></section>
     </main>
 
     <button class="fab" data-action="add-expense"><span aria-hidden="true">＋</span> Ausgabe</button>
 
     <nav class="tabbar">
       <button data-action="tab" data-tab="ausgaben" aria-current="page"><span class="tab-icon">💶</span>Ausgaben</button>
-      <button data-action="tab" data-tab="kalender"><span class="tab-icon">📅</span>Kalender</button>
+      <button data-action="tab" data-tab="einkauf"><span class="tab-icon">🛒</span>Einkauf</button>
       <button data-action="tab" data-tab="putzplan"><span class="tab-icon">🧹</span>Putzplan</button>
+      <button data-action="tab" data-tab="kalender"><span class="tab-icon">📅</span>Kalender</button>
     </nav>
   </div>
 
   <!-- Formular: Ausgabe eintragen / bearbeiten -->
   <dialog id="expense-dialog" class="sheet">
-    <form id="expense-form" novalidate>
+    <form id="expense-form" class="sheet-form" novalidate>
       <div class="sheet-head">
         <h2 id="form-title">Neue Ausgabe</h2>
         <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
@@ -142,6 +145,23 @@
 
       <div class="form-actions">
         <button type="button" class="btn danger" id="f-delete" data-action="delete-expense">Löschen</button>
+        <button type="submit" class="btn primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Formular: Putzplan-Bereiche bearbeiten -->
+  <dialog id="areas-dialog" class="sheet">
+    <form id="areas-form" class="sheet-form" novalidate>
+      <div class="sheet-head">
+        <h2>Putzplan-Bereiche</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <p class="hint">Änderungen gelten sofort für alle. Die Bereiche werden der Reihe nach verteilt und wechseln jede Woche.</p>
+      <div id="areas-list" class="areas-list"></div>
+      <button type="button" class="btn outline" data-action="add-area">＋ Bereich hinzufügen</button>
+      <p class="error" id="areas-error"></p>
+      <div class="form-actions">
         <button type="submit" class="btn primary">Speichern</button>
       </div>
     </form>

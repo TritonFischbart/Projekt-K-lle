@@ -14,3 +14,10 @@ export const CATEGORIES = [
   { id: 'freizeit', name: 'Freizeit', icon: '🎉' },
   { id: 'sonstiges', name: 'Sonstiges', icon: '📦' },
 ];
+
+// Die Bereiche im Putzplan. Jede Woche rücken sie eine Person weiter.
+export const CHORES = [
+  { id: 'bad', name: 'Bad', icon: '🛁', details: 'Toilette, Waschbecken, Dusche, Spiegel' },
+  { id: 'kueche', name: 'Küche', icon: '🍳', details: 'Arbeitsflächen, Herd, Spüle, Kühlschrank checken' },
+  { id: 'boeden', name: 'Böden & Müll', icon: '🧹', details: 'Saugen & Wischen in Flur und Gemeinschaftsräumen, Müll & Altglas raus' },
+];

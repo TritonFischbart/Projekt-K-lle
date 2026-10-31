@@ -1,8 +1,11 @@
 // Hauptprogramm: Anmeldung, Anzeige und Bedienung der Website.
 
-import { PEOPLE, CATEGORIES } from './config.js';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js';
-import { firebaseConfig } from './firebase-config.js';
+// Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
+// damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=4';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=4';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=4';
+import { firebaseConfig } from './firebase-config.js?v=4';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -14,6 +17,10 @@ const state = {
   expenses: [],
   payments: [],
   settlements: [],
+  chores: {},
+  choreWeekOffset: 0,
+  areas: null,
+  shopping: [],
   tab: 'ausgaben',
   editingId: null,
 };
@@ -95,9 +102,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js')).createDemoBackend();
+      backend = (await import('./demo.js?v=4')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=4')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -125,9 +132,16 @@ function handleUser(user) {
     state.members = Object.fromEntries(docs.map((d) => [d.id, d]));
     route();
   });
-  listen('expenses', (docs) => { state.expenses = docs; renderAusgaben(); });
-  listen('payments', (docs) => { state.payments = docs; renderAusgaben(); });
-  listen('settlements', (docs) => { state.settlements = docs; renderAusgaben(); });
+  listen('expenses', (docs) => { state.expenses = docs; renderAll(); });
+  listen('payments', (docs) => { state.payments = docs; renderAll(); });
+  listen('settlements', (docs) => { state.settlements = docs; renderAll(); });
+  listen('chores', (docs) => { state.chores = Object.fromEntries(docs.map((d) => [d.id, d])); renderAll(); });
+  listen('settings', (docs) => {
+    const plan = docs.find((d) => d.id === 'putzplan');
+    state.areas = plan?.areas?.length ? plan.areas : null;
+    renderAll();
+  });
+  listen('shopping', (docs) => { state.shopping = docs; renderAll(); });
 }
 
 function listen(name, callback) {
@@ -150,7 +164,7 @@ function route() {
       renderHeader();
       switchTab(state.tab);
     }
-    renderAusgaben();
+    renderAll();
     return;
   }
 
@@ -212,7 +226,18 @@ function switchTab(tab) {
     else b.removeAttribute('aria-current');
   });
   $('.fab').hidden = tab !== 'ausgaben';
+  if (tab !== 'putzplan') state.choreWeekOffset = 0;
   window.scrollTo(0, 0);
+}
+
+function renderAll() {
+  if (!state.me) return;
+  renderAusgaben();
+  renderEinkauf();
+  renderPutzplan();
+  const open = myOpenChores().length;
+  const tabButton = document.querySelector('.tabbar [data-tab=putzplan]');
+  tabButton.classList.toggle('has-badge', open > 0);
 }
 
 // ---------- Ausgaben anzeigen ----------
@@ -227,6 +252,7 @@ function renderAusgaben() {
   const transfers = suggestTransfers(balances, PERSON_IDS);
 
   $('#tab-ausgaben').innerHTML = [
+    choreBanner(),
     heroCard(balances[state.me]),
     balancesCard(balances),
     transfersCard(transfers, expenses.length + payments.length > 0),
@@ -376,6 +402,310 @@ function historyCard(openIds) {
   return `<section class="card"><h2>Frühere Abrechnungen</h2>${items}</section>`;
 }
 
+// ---------- Putzplan ----------
+
+// Die Bereiche aus der App – oder die Standard-Bereiche aus config.js.
+const choreAreas = () => state.areas ?? CHORES;
+
+// Alle Aufgaben einer Woche mit der Person, die (nach Tausch) dran ist.
+function weekChores(monday) {
+  const key = weekKey(monday);
+  const idx = weekIndex(monday);
+  return choreAreas().map((chore, i) => {
+    const docId = `${key}_${chore.id}`;
+    const saved = state.chores[docId];
+    const planned = defaultAssignee(PERSON_IDS, i, idx);
+    return {
+      chore,
+      docId,
+      week: key,
+      planned,
+      assignee: saved?.assignee ?? planned,
+      doneBy: saved?.doneBy ?? null,
+      saved,
+    };
+  });
+}
+
+const thisMonday = () => mondayOf(new Date());
+const myOpenChores = () => weekChores(thisMonday()).filter((c) => c.assignee === state.me && !c.doneBy);
+
+function choreBanner() {
+  const open = myOpenChores();
+  if (!open.length) return '';
+  return `
+    <button class="card banner" data-action="tab" data-tab="putzplan">
+      <span class="banner-icon" aria-hidden="true">${open[0].chore.icon}</span>
+      <span class="banner-text">Diese Woche bist du dran mit:<strong>${open.map((c) => esc(c.chore.name)).join(' & ')}</strong></span>
+      <span class="banner-arrow" aria-hidden="true">›</span>
+    </button>`;
+}
+
+function weekTitle(offset, monday) {
+  if (offset === 0) return 'Diese Woche';
+  if (offset === 1) return 'Nächste Woche';
+  if (offset === -1) return 'Letzte Woche';
+  return `KW ${isoWeek(monday).week}`;
+}
+
+function weekRange(monday) {
+  const opts = { day: 'numeric', month: 'short' };
+  return `KW ${isoWeek(monday).week} · ${monday.toLocaleDateString('de-DE', opts)} – ${addDays(monday, 6).toLocaleDateString('de-DE', opts)}`;
+}
+
+function saveChore(c, changes) {
+  backend.set('chores', c.docId, {
+    week: c.week,
+    chore: c.chore.id,
+    assignee: c.assignee,
+    doneBy: c.doneBy,
+    doneAt: c.saved?.doneAt ?? null,
+    ...changes,
+    updatedBy: state.me,
+    updatedAt: backend.now(),
+  }).catch(showError);
+}
+
+function findChore(docId) {
+  const monday = addDays(thisMonday(), state.choreWeekOffset * 7);
+  return weekChores(monday).find((c) => c.docId === docId);
+}
+
+function choreDone(docId) {
+  const c = findChore(docId);
+  if (!c) return;
+  saveChore(c, { doneBy: state.me, doneAt: backend.now() });
+  toast(`${c.chore.name} erledigt – danke! 💪`);
+}
+
+function choreUndo(docId) {
+  const c = findChore(docId);
+  if (c) saveChore(c, { doneBy: null, doneAt: null });
+}
+
+function choreTake(docId) {
+  const c = findChore(docId);
+  if (!c || !confirm(`Übernimmst du ${c.chore.name} für ${personName(c.assignee)}?`)) return;
+  saveChore(c, { assignee: state.me });
+  toast(`Du hast ${c.chore.name} übernommen ✓`);
+}
+
+function choreGiveBack(docId) {
+  const c = findChore(docId);
+  if (!c || !confirm(`${c.chore.name} wieder an ${personName(c.planned)} zurückgeben?`)) return;
+  saveChore(c, { assignee: c.planned });
+}
+
+function choreItem(c, offset) {
+  const mine = c.assignee === state.me;
+  const swapped = c.assignee !== c.planned;
+  const who = `
+    <span class="chore-who">
+      ${avatar(c.assignee, true)}
+      <span>${mine ? 'Du' : esc(personName(c.assignee))}${swapped ? ` <em>(übernommen von ${esc(personName(c.planned))})</em>` : ''}</span>
+    </span>`;
+
+  let actions = '';
+  if (c.doneBy) {
+    actions = `
+      <span class="done-label">✓ erledigt${c.doneBy !== c.assignee ? ` von ${esc(personName(c.doneBy))}` : ''}</span>
+      <button class="link-btn" data-action="chore-undo" data-id="${c.docId}">Rückgängig</button>`;
+  } else {
+    if (mine && offset <= 0) actions += `<button class="btn small primary" data-action="chore-done" data-id="${c.docId}">Erledigt ✓</button>`;
+    if (!mine) actions += `<button class="btn small" data-action="chore-take" data-id="${c.docId}">Ich übernehme</button>`;
+    if (swapped && (mine || c.planned === state.me)) actions += `<button class="link-btn" data-action="chore-giveback" data-id="${c.docId}">Zurückgeben</button>`;
+  }
+
+  return `
+    <li class="chore${c.doneBy ? ' done' : ''}${mine ? ' mine' : ''}">
+      <span class="entry-icon" aria-hidden="true">${c.doneBy ? '✅' : c.chore.icon}</span>
+      <span class="entry-main">
+        <span class="entry-title">${esc(c.chore.name)}</span>
+        <span class="entry-sub">${esc(c.chore.details)}</span>
+        ${who}
+      </span>
+      <span class="chore-actions">${actions}</span>
+    </li>`;
+}
+
+function choreHero() {
+  const all = weekChores(thisMonday()).filter((c) => c.assignee === state.me);
+  const open = all.filter((c) => !c.doneBy);
+  if (!all.length) {
+    return '<section class="card hero even"><p class="hero-label">Diese Woche hast du keine Aufgabe</p><p class="hero-amount">😎</p></section>';
+  }
+  if (!open.length) {
+    return '<section class="card hero even"><p class="hero-label">Deine Aufgaben für diese Woche sind erledigt</p><p class="hero-amount">💪</p></section>';
+  }
+  return `
+    <section class="card hero plus">
+      <p class="hero-label">Diese Woche bist du dran mit</p>
+      <p class="hero-amount chore-hero">${open.map((c) => `${c.chore.icon} ${esc(c.chore.name)}`).join('<br>')}</p>
+    </section>`;
+}
+
+function upcomingCard() {
+  const columns = `style="grid-template-columns: 52px repeat(${choreAreas().length}, minmax(0, 1fr))"`;
+  const rows = [1, 2, 3, 4].map((n) => {
+    const monday = addDays(thisMonday(), n * 7);
+    const cells = weekChores(monday).map((c) => `
+      <span class="plan-cell">${avatar(c.assignee, true)}<span>${esc(personName(c.assignee))}</span></span>`).join('');
+    return `<li class="plan-row" ${columns}><span class="plan-week">KW ${isoWeek(monday).week}</span>${cells}</li>`;
+  }).join('');
+  const head = choreAreas().map((c) => `<span class="plan-cell head">${c.icon} ${esc(c.name)}</span>`).join('');
+  return `
+    <section class="card">
+      <h2>Die nächsten Wochen</h2>
+      <ul class="plan"><li class="plan-row plan-head" ${columns}><span class="plan-week"></span>${head}</li>${rows}</ul>
+    </section>`;
+}
+
+function renderPutzplan() {
+  const offset = state.choreWeekOffset;
+  const monday = addDays(thisMonday(), offset * 7);
+  $('#tab-putzplan').innerHTML = `
+    ${choreHero()}
+    <section class="card">
+      <div class="week-nav">
+        <button class="icon-btn" data-action="week" data-step="-1" aria-label="Woche zurück">‹</button>
+        <button class="week-title" data-action="week" data-step="0">
+          <strong>${weekTitle(offset, monday)}</strong>
+          <small>${weekRange(monday)}</small>
+        </button>
+        <button class="icon-btn" data-action="week" data-step="1" aria-label="Woche vor">›</button>
+      </div>
+      <ul class="chores">${weekChores(monday).map((c) => choreItem(c, offset)).join('')}</ul>
+      <p class="hint">Jemand hat spontan Zeit? Mit „Ich übernehme“ könnt ihr Aufgaben tauschen.</p>
+    </section>
+    <button class="btn outline full" data-action="edit-areas">✏️ Bereiche bearbeiten</button>
+    ${upcomingCard()}`;
+}
+
+// ---------- Putzplan-Bereiche bearbeiten ----------
+
+function areaRow(area) {
+  return `
+    <div class="area-row" data-id="${esc(area.id)}">
+      <input class="area-icon" value="${esc(area.icon)}" maxlength="4" aria-label="Symbol">
+      <div class="area-fields">
+        <input class="area-name" value="${esc(area.name)}" maxlength="30" placeholder="Name, z. B. Bad">
+        <input class="area-details" value="${esc(area.details)}" maxlength="120" placeholder="Was gehört dazu?">
+      </div>
+      <button type="button" class="icon-btn" data-action="remove-area" aria-label="Bereich löschen">🗑</button>
+    </div>`;
+}
+
+function openAreasForm() {
+  $('#areas-list').innerHTML = choreAreas().map(areaRow).join('');
+  $('#areas-error').textContent = '';
+  $('#areas-dialog').showModal();
+}
+
+function addArea() {
+  const id = `b${Date.now().toString(36)}`;
+  $('#areas-list').insertAdjacentHTML('beforeend', areaRow({ id, icon: '🧽', name: '', details: '' }));
+  $(`#areas-list [data-id="${id}"] .area-name`).focus();
+}
+
+function onSubmitAreas(event) {
+  event.preventDefault();
+  const areas = [...document.querySelectorAll('#areas-list .area-row')].map((row) => ({
+    id: row.dataset.id,
+    icon: row.querySelector('.area-icon').value.trim() || '🧽',
+    name: row.querySelector('.area-name').value.trim(),
+    details: row.querySelector('.area-details').value.trim(),
+  }));
+  const problem = !areas.length ? 'Es muss mindestens einen Bereich geben.'
+    : areas.some((a) => !a.name) ? 'Bitte jedem Bereich einen Namen geben.'
+      : areas.length > 8 ? 'Bitte höchstens 8 Bereiche.'
+        : '';
+  if (problem) {
+    $('#areas-error').textContent = problem;
+    return;
+  }
+  backend.set('settings', 'putzplan', { areas, updatedBy: state.me, updatedAt: backend.now() }).catch(showError);
+  $('#areas-dialog').close();
+  toast('Putzplan geändert ✓');
+}
+
+// ---------- Einkaufsliste ----------
+
+function renderEinkauf() {
+  const open = state.shopping.filter((i) => !i.doneBy)
+    .sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt));
+  const done = state.shopping.filter((i) => i.doneBy)
+    .sort((a, b) => toMillis(b.doneAt) - toMillis(a.doneAt));
+
+  const openList = open.length
+    ? `<ul class="shop">${open.map((i) => `
+        <li class="shop-row">
+          <button class="shop-item" data-action="shop-toggle" data-id="${esc(i.id)}">
+            <span class="shop-check" aria-hidden="true"></span>
+            <span class="shop-name">${esc(i.name)}</span>
+            <span class="shop-meta">${esc(personName(i.addedBy))}</span>
+          </button>
+          <button class="icon-btn small" data-action="shop-delete" data-id="${esc(i.id)}" aria-label="${esc(i.name)} löschen">✕</button>
+        </li>`).join('')}</ul>
+       <p class="hint">Antippen, wenn du es besorgt hast.</p>`
+    : '<p class="empty">Alles da! Nichts auf der Liste. 🎉</p>';
+
+  const doneCard = done.length ? `
+    <section class="card">
+      <div class="card-head"><h2>Besorgt</h2><button class="link-btn" data-action="shop-clear">Liste aufräumen</button></div>
+      <ul class="shop">${done.map((i) => `
+        <li class="shop-row">
+          <button class="shop-item done" data-action="shop-toggle" data-id="${esc(i.id)}">
+            <span class="shop-check" aria-hidden="true">✓</span>
+            <span class="shop-name">${esc(i.name)}</span>
+            <span class="shop-meta">von ${esc(personName(i.doneBy))}</span>
+          </button>
+        </li>`).join('')}</ul>
+    </section>` : '';
+
+  $('#shop-list').innerHTML = `
+    <section class="card">
+      <div class="card-head"><h2>Fehlt noch</h2>${open.length ? `<span class="total">${open.length}</span>` : ''}</div>
+      ${openList}
+    </section>
+    ${doneCard}`;
+
+  const tabButton = document.querySelector('.tabbar [data-tab=einkauf]');
+  tabButton.dataset.count = open.length || '';
+}
+
+function onSubmitShopping(event) {
+  event.preventDefault();
+  const input = $('#shop-input');
+  // Mehrere Sachen auf einmal: "Milch, Eier, Brot"
+  const names = input.value.split(',').map((n) => n.trim()).filter(Boolean);
+  if (!names.length) return;
+  const onList = new Set(state.shopping.filter((i) => !i.doneBy).map((i) => i.name.toLowerCase()));
+  const fresh = names.filter((n) => !onList.has(n.toLowerCase()));
+  fresh.forEach((name) => {
+    backend.add('shopping', { name, addedBy: state.me, createdAt: backend.now(), doneBy: null, doneAt: null }).catch(showError);
+  });
+  if (fresh.length < names.length) toast('Steht schon auf der Liste');
+  input.value = '';
+}
+
+function shopToggle(id) {
+  const item = state.shopping.find((i) => i.id === id);
+  if (!item) return;
+  backend.update('shopping', id, item.doneBy
+    ? { doneBy: null, doneAt: null }
+    : { doneBy: state.me, doneAt: backend.now() }).catch(showError);
+}
+
+function shopDelete(id) {
+  backend.remove('shopping', id).catch(showError);
+}
+
+function shopClear() {
+  const done = state.shopping.filter((i) => i.doneBy);
+  if (!confirm(`${done.length} besorgte Sachen von der Liste entfernen?`)) return;
+  done.forEach((i) => backend.remove('shopping', i.id).catch(showError));
+}
+
 // ---------- Formular ----------
 
 function chip(name, type, value, label, checked) {
@@ -518,11 +848,27 @@ function onClick(event) {
     case 'tab': switchTab(el.dataset.tab); break;
     case 'add-expense': openExpenseForm(); break;
     case 'edit-expense': openExpenseForm(state.expenses.find((e) => e.id === el.dataset.id)); break;
-    case 'close-form': $('#expense-dialog').close(); break;
+    case 'close-form': el.closest('dialog').close(); break;
+    case 'edit-areas': openAreasForm(); break;
+    case 'add-area': addArea(); break;
+    case 'remove-area': el.closest('.area-row').remove(); break;
+    case 'shop-toggle': shopToggle(el.dataset.id); break;
+    case 'shop-delete': shopDelete(el.dataset.id); break;
+    case 'shop-clear': shopClear(); break;
     case 'delete-expense': deleteExpense(); break;
     case 'mark-paid': markPaid(el.dataset.from, el.dataset.to, Number(el.dataset.amount)); break;
     case 'undo-payment': undoPayment(el.dataset.id); break;
     case 'settle-all': settleAll(); break;
+    case 'chore-done': choreDone(el.dataset.id); break;
+    case 'chore-undo': choreUndo(el.dataset.id); break;
+    case 'chore-take': choreTake(el.dataset.id); break;
+    case 'chore-giveback': choreGiveBack(el.dataset.id); break;
+    case 'week': {
+      const step = Number(el.dataset.step);
+      state.choreWeekOffset = step === 0 ? 0 : state.choreWeekOffset + step;
+      renderPutzplan();
+      break;
+    }
     default: break;
   }
 }
@@ -531,9 +877,11 @@ document.addEventListener('click', onClick);
 $('#expense-form').addEventListener('submit', onSubmitExpense);
 $('#expense-form').addEventListener('input', updateSplitHint);
 $('#expense-form').addEventListener('change', updateSplitHint);
-// Tippen neben das Formular schließt es.
-$('#expense-dialog').addEventListener('click', (event) => {
-  if (event.target === event.currentTarget) event.currentTarget.close();
-});
+$('#areas-form').addEventListener('submit', onSubmitAreas);
+$('#shop-form').addEventListener('submit', onSubmitShopping);
+// Tippen neben ein Formular schließt es.
+document.querySelectorAll('dialog').forEach((dialog) => dialog.addEventListener('click', (event) => {
+  if (event.target === dialog) dialog.close();
+}));
 
 start();
