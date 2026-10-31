@@ -1,7 +1,7 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=4';
+import { weekKey } from './chores.js?v=5';
 
 function daysAgo(n) {
   const d = new Date();
@@ -34,6 +34,14 @@ export function createDemoBackend() {
     ],
     chores: [],
     settings: [],
+    favorites: [
+      { id: 'milch', name: 'Milch', count: 6, lastUsed: created(2) },
+      { id: 'klopapier', name: 'Klopapier', count: 4, lastUsed: created(3) },
+      { id: 'eier', name: 'Eier', count: 3, lastUsed: created(5) },
+      { id: 'brot', name: 'Brot', count: 3, lastUsed: created(6) },
+      { id: 'sp%C3%BClmittel', name: 'Spülmittel', count: 2, lastUsed: created(9) },
+      { id: 'kaffee', name: 'Kaffee', count: 2, lastUsed: created(12) },
+    ],
     shopping: [
       { id: 'i1', name: 'Milch', addedBy: 'jana', createdAt: created(2), doneBy: null, doneAt: null },
       { id: 'i2', name: 'Spülmaschinentabs', addedBy: 'julian', createdAt: created(1), doneBy: null, doneAt: null },

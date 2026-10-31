@@ -4,7 +4,7 @@ Die WG-Website von Jana, Jul und Lukas.
 
 - 💶 **Ausgaben** – wer hat was bezahlt, wer schuldet wem wie viel, Ausgleichen mit möglichst wenigen Überweisungen
 - 📅 **Kalender** – kommt bald (gemeinsamer Google-Kalender)
-- 🛒 **Einkauf** – gemeinsame Einkaufsliste, Besorgtes wird durchgestrichen
+- 🛒 **Einkauf** – gemeinsame Einkaufsliste mit Schnellauswahl für häufige Sachen, Besorgtes wird durchgestrichen
 - 🧹 **Putzplan** – Bereiche direkt in der App bearbeitbar; wechselt jede Woche, mit Erledigt-Haken und „Ich übernehme“
 
 Einrichtung: siehe [ANLEITUNG.md](ANLEITUNG.md).

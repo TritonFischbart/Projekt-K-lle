@@ -2,10 +2,10 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=4';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=4';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=4';
-import { firebaseConfig } from './firebase-config.js?v=4';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=5';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=5';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=5';
+import { firebaseConfig } from './firebase-config.js?v=5';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -21,6 +21,8 @@ const state = {
   choreWeekOffset: 0,
   areas: null,
   shopping: [],
+  favorites: [],
+  quickEdit: false,
   tab: 'ausgaben',
   editingId: null,
 };
@@ -102,9 +104,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=4')).createDemoBackend();
+      backend = (await import('./demo.js?v=5')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=4')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=5')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -142,6 +144,7 @@ function handleUser(user) {
     renderAll();
   });
   listen('shopping', (docs) => { state.shopping = docs; renderAll(); });
+  listen('favorites', (docs) => { state.favorites = docs; renderAll(); });
 }
 
 function listen(name, callback) {
@@ -669,8 +672,60 @@ function renderEinkauf() {
     </section>
     ${doneCard}`;
 
+  $('#shop-quick').innerHTML = renderQuickPicks();
+
   const tabButton = document.querySelector('.tabbar [data-tab=einkauf]');
   tabButton.dataset.count = open.length || '';
+}
+
+// Schnellauswahl: Was mindestens so oft eingetragen wurde, erscheint als Knopf.
+const QUICK_MIN_COUNT = 2;
+const QUICK_MAX = 10;
+
+// Firestore erlaubt keinen "/" in Namen von Einträgen.
+const favoriteId = (name) => encodeURIComponent(name.trim().toLowerCase());
+const openShoppingNames = () => new Set(state.shopping.filter((i) => !i.doneBy).map((i) => i.name.toLowerCase()));
+
+function renderQuickPicks() {
+  const onList = openShoppingNames();
+  const picks = state.favorites
+    .filter((f) => f.count >= QUICK_MIN_COUNT && (state.quickEdit || !onList.has(f.name.toLowerCase())))
+    .sort((a, b) => b.count - a.count || toMillis(b.lastUsed) - toMillis(a.lastUsed))
+    .slice(0, QUICK_MAX);
+  if (!picks.length) {
+    state.quickEdit = false;
+    return '';
+  }
+  const action = state.quickEdit ? 'quick-remove' : 'quick-add';
+  return `
+    <section class="card quick${state.quickEdit ? ' editing' : ''}">
+      <div class="card-head">
+        <h2>Schnellauswahl</h2>
+        <button class="link-btn" data-action="quick-edit">${state.quickEdit ? 'Fertig' : 'Bearbeiten'}</button>
+      </div>
+      <div class="quick-chips">${picks.map((f) => `
+        <button class="quick-chip" data-action="${action}" data-id="${esc(f.id)}">
+          ${state.quickEdit ? '✕' : '＋'} ${esc(f.name)}
+        </button>`).join('')}</div>
+      ${state.quickEdit ? '<p class="hint">Antippen, um es aus der Schnellauswahl zu entfernen.</p>' : ''}
+    </section>`;
+}
+
+function addShoppingItems(names) {
+  const onList = openShoppingNames();
+  const fresh = [...new Set(names)].filter((n) => !onList.has(n.toLowerCase()));
+  fresh.forEach((name) => {
+    backend.add('shopping', { name, addedBy: state.me, createdAt: backend.now(), doneBy: null, doneAt: null }).catch(showError);
+    // Mitzählen, wie oft etwas gebraucht wird.
+    const id = favoriteId(name);
+    const known = state.favorites.find((f) => f.id === id);
+    backend.set('favorites', id, {
+      name: known?.name ?? name,
+      count: (known?.count ?? 0) + 1,
+      lastUsed: backend.now(),
+    }).catch(showError);
+  });
+  if (fresh.length < names.length) toast('Steht schon auf der Liste');
 }
 
 function onSubmitShopping(event) {
@@ -679,13 +734,18 @@ function onSubmitShopping(event) {
   // Mehrere Sachen auf einmal: "Milch, Eier, Brot"
   const names = input.value.split(',').map((n) => n.trim()).filter(Boolean);
   if (!names.length) return;
-  const onList = new Set(state.shopping.filter((i) => !i.doneBy).map((i) => i.name.toLowerCase()));
-  const fresh = names.filter((n) => !onList.has(n.toLowerCase()));
-  fresh.forEach((name) => {
-    backend.add('shopping', { name, addedBy: state.me, createdAt: backend.now(), doneBy: null, doneAt: null }).catch(showError);
-  });
-  if (fresh.length < names.length) toast('Steht schon auf der Liste');
+  addShoppingItems(names);
   input.value = '';
+}
+
+function quickAdd(id) {
+  const fav = state.favorites.find((f) => f.id === id);
+  if (fav) addShoppingItems([fav.name]);
+}
+
+function quickRemove(id) {
+  const fav = state.favorites.find((f) => f.id === id);
+  if (fav && confirm(`„${fav.name}“ aus der Schnellauswahl entfernen?`)) backend.remove('favorites', id).catch(showError);
 }
 
 function shopToggle(id) {
@@ -855,6 +915,9 @@ function onClick(event) {
     case 'shop-toggle': shopToggle(el.dataset.id); break;
     case 'shop-delete': shopDelete(el.dataset.id); break;
     case 'shop-clear': shopClear(); break;
+    case 'quick-add': quickAdd(el.dataset.id); break;
+    case 'quick-remove': quickRemove(el.dataset.id); break;
+    case 'quick-edit': state.quickEdit = !state.quickEdit; renderEinkauf(); break;
     case 'delete-expense': deleteExpense(); break;
     case 'mark-paid': markPaid(el.dataset.from, el.dataset.to, Number(el.dataset.amount)); break;
     case 'undo-payment': undoPayment(el.dataset.id); break;
