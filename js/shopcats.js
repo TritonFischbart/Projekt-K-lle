@@ -52,3 +52,20 @@ export function guessCategory(name) {
   }
   return best?.category ?? 'sonstiges';
 }
+
+// "2x Milch" -> { amount: "2×", name: "Milch" }, "500 g Hack" -> { amount: "500 g", name: "Hack" },
+// "Milch 2x" -> { amount: "2×", name: "Milch" }. Ohne Menge: amount = "".
+const UNIT = '(x|×|stk\\.?|stück|g|gr|kg|l|ml|pck\\.?|packungen?|flaschen?|dosen?)';
+export function parseShoppingInput(text) {
+  const t = String(text ?? '').trim();
+  const fmt = (num, unit) => {
+    const u = (unit ?? '').toLowerCase();
+    if (!u || u === 'x' || u === '×') return `${num}×`;
+    return `${num} ${unit}`;
+  };
+  let m = t.match(new RegExp(`^(\\d+(?:[.,]\\d+)?)\\s*${UNIT}?\\s+(.+)$`, 'i'));
+  if (m) return { amount: fmt(m[1], m[2]), name: m[3].trim() };
+  m = t.match(new RegExp(`^(.+?)\\s+(\\d+(?:[.,]\\d+)?)\\s*${UNIT}?$`, 'i'));
+  if (m) return { amount: fmt(m[2], m[3]), name: m[1].trim() };
+  return { amount: '', name: t };
+}
