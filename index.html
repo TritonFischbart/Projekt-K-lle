@@ -11,8 +11,8 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/style.css?v=5">
-  <script type="module" src="js/app.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=6">
+  <script type="module" src="js/app.js?v=6"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -79,13 +79,7 @@
         <div id="shop-list" class="stack"></div>
       </section>
 
-      <section id="tab-kalender" class="tab" hidden>
-        <div class="card soon">
-          <div class="soon-icon">📅</div>
-          <h2>Kalender</h2>
-          <p>Hier erscheinen bald eure gemeinsamen WG-Termine aus dem Google-Kalender.</p>
-        </div>
-      </section>
+      <section id="tab-kalender" class="tab" hidden></section>
 
       <section id="tab-putzplan" class="tab" hidden></section>
     </main>
@@ -163,6 +157,30 @@
       <button type="button" class="btn outline" data-action="add-area">＋ Bereich hinzufügen</button>
       <p class="error" id="areas-error"></p>
       <div class="form-actions">
+        <button type="submit" class="btn primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Formular: Google-Kalender verbinden -->
+  <dialog id="calendar-dialog" class="sheet">
+    <form id="calendar-form" class="sheet-form" novalidate>
+      <div class="sheet-head">
+        <h2>Kalender verbinden</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <p class="hint">Beide Werte bekommst du bei Google (siehe ANLEITUNG.md, Teil D). Sie werden nur in eurer geschützten Datenbank gespeichert.</p>
+      <label class="field">
+        <span class="label">Kalender-ID</span>
+        <input id="c-id" placeholder="…@group.calendar.google.com" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </label>
+      <label class="field">
+        <span class="label">API-Schlüssel</span>
+        <input id="c-key" placeholder="AIza…" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </label>
+      <p class="error" id="c-error"></p>
+      <div class="form-actions">
+        <button type="button" class="btn danger" id="c-remove" data-action="calendar-remove">Trennen</button>
         <button type="submit" class="btn primary">Speichern</button>
       </div>
     </form>

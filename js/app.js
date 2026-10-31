@@ -2,10 +2,11 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=5';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=5';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=5';
-import { firebaseConfig } from './firebase-config.js?v=5';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=6';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=6';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=6';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=6';
+import { firebaseConfig } from './firebase-config.js?v=6';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -23,6 +24,7 @@ const state = {
   shopping: [],
   favorites: [],
   quickEdit: false,
+  calendar: { config: null, events: null, error: null, loading: false, loadedAt: 0 },
   tab: 'ausgaben',
   editingId: null,
 };
@@ -104,9 +106,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=5')).createDemoBackend();
+      backend = (await import('./demo.js?v=6')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=5')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=6')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -141,6 +143,15 @@ function handleUser(user) {
   listen('settings', (docs) => {
     const plan = docs.find((d) => d.id === 'putzplan');
     state.areas = plan?.areas?.length ? plan.areas : null;
+    const kal = docs.find((d) => d.id === 'kalender');
+    const config = kal?.calendarId && kal?.apiKey ? { calendarId: kal.calendarId, apiKey: kal.apiKey } : null;
+    const changed = JSON.stringify(config) !== JSON.stringify(state.calendar.config);
+    state.calendar.config = config;
+    if (changed) {
+      state.calendar.events = null;
+      state.calendar.error = null;
+      loadEvents();
+    }
     renderAll();
   });
   listen('shopping', (docs) => { state.shopping = docs; renderAll(); });
@@ -230,6 +241,7 @@ function switchTab(tab) {
   });
   $('.fab').hidden = tab !== 'ausgaben';
   if (tab !== 'putzplan') state.choreWeekOffset = 0;
+  if (tab === 'kalender' && Date.now() - state.calendar.loadedAt > 60000) loadEvents();
   window.scrollTo(0, 0);
 }
 
@@ -238,6 +250,7 @@ function renderAll() {
   renderAusgaben();
   renderEinkauf();
   renderPutzplan();
+  renderKalender();
   const open = myOpenChores().length;
   const tabButton = document.querySelector('.tabbar [data-tab=putzplan]');
   tabButton.classList.toggle('has-badge', open > 0);
@@ -255,6 +268,7 @@ function renderAusgaben() {
   const transfers = suggestTransfers(balances, PERSON_IDS);
 
   $('#tab-ausgaben').innerHTML = [
+    todayBanner(),
     choreBanner(),
     heroCard(balances[state.me]),
     balancesCard(balances),
@@ -766,6 +780,147 @@ function shopClear() {
   done.forEach((i) => backend.remove('shopping', i.id).catch(showError));
 }
 
+// ---------- Kalender ----------
+
+const sameDay = (a, b) => a.toDateString() === b.toDateString();
+const timeOf = (d) => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+async function loadEvents() {
+  const cal = state.calendar;
+  if (!cal.config || cal.loading) return;
+  cal.loading = true;
+  renderKalender();
+  try {
+    cal.events = backend.isDemo ? backend.demoEvents() : await fetchEvents(cal.config);
+    cal.error = null;
+  } catch (err) {
+    console.error(err);
+    cal.error = err;
+  }
+  cal.loading = false;
+  cal.loadedAt = Date.now();
+  renderAll();
+}
+
+function calendarErrorText(err) {
+  if (err?.status === 404) return 'Kalender nicht gefunden. Stimmt die Kalender-ID? Ist der Kalender öffentlich freigegeben?';
+  if (err?.status === 400 || err?.status === 403) return 'Google lehnt den Zugriff ab. Stimmt der API-Schlüssel und ist die Google Calendar API aktiviert?';
+  return 'Die Termine konnten nicht geladen werden. Bist du online?';
+}
+
+function eventTime(e, day) {
+  if (e.allDay) return 'ganztägig';
+  if (!sameDay(e.start, day)) return `bis ${timeOf(e.end)}`;
+  return sameDay(e.start, e.end) ? `${timeOf(e.start)} – ${timeOf(e.end)}` : `ab ${timeOf(e.start)}`;
+}
+
+function dayTitle(day) {
+  const today = new Date();
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  if (sameDay(day, today)) return 'Heute';
+  if (sameDay(day, tomorrow)) return 'Morgen';
+  return day.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function todayEvents() {
+  const groups = groupByDay(state.calendar.events ?? []);
+  return groups.length && sameDay(groups[0].day, new Date()) ? groups[0].events : [];
+}
+
+function todayBanner() {
+  const events = todayEvents();
+  if (!events.length) return '';
+  const text = events.slice(0, 3)
+    .map((e) => `${esc(e.title)}${e.allDay ? '' : ` · ${timeOf(e.start)}`}`).join('<br>');
+  return `
+    <button class="card banner" data-action="tab" data-tab="kalender">
+      <span class="banner-icon" aria-hidden="true">📅</span>
+      <span class="banner-text">Heute in der WG:<strong>${text}</strong></span>
+      <span class="banner-arrow" aria-hidden="true">›</span>
+    </button>`;
+}
+
+function renderKalender() {
+  const cal = state.calendar;
+  const el = $('#tab-kalender');
+  if (!cal.config) {
+    el.innerHTML = `
+      <section class="card soon">
+        <div class="soon-icon">📅</div>
+        <h2>Gemeinsamer Kalender</h2>
+        <p>Verbinde euren WG-Kalender von Google. Dann erscheinen hier alle Termine – und auf der Startseite, was heute ansteht.</p>
+        <button class="btn primary" data-action="calendar-settings">Kalender verbinden</button>
+      </section>`;
+    return;
+  }
+
+  let body;
+  if (cal.error) {
+    body = `<p class="error">${esc(calendarErrorText(cal.error))}</p>
+      <button class="btn outline full" data-action="calendar-settings">Einstellungen prüfen</button>`;
+  } else if (!cal.events) {
+    body = '<div class="center-pad"><div class="spinner"></div></div>';
+  } else {
+    const groups = groupByDay(cal.events);
+    body = groups.length
+      ? groups.map((g) => `
+        <div class="day">
+          <h3 class="day-title${sameDay(g.day, new Date()) ? ' today' : ''}">${dayTitle(g.day)}</h3>
+          <ul class="events">${g.events.map((e) => `
+            <li><a class="event" href="${esc(e.link)}" target="_blank" rel="noopener">
+              <span class="event-time">${eventTime(e, g.day)}</span>
+              <span class="event-main">
+                <span class="event-title">${esc(e.title)}</span>
+                ${e.location ? `<span class="event-sub">📍 ${esc(e.location)}</span>` : ''}
+              </span>
+            </a></li>`).join('')}</ul>
+        </div>`).join('')
+      : '<p class="empty">In den nächsten 60 Tagen steht nichts an.</p>';
+  }
+
+  el.innerHTML = `
+    <section class="card">
+      <div class="card-head">
+        <h2>Nächste Termine</h2>
+        <button class="link-btn" data-action="calendar-reload">${cal.loading ? 'Lädt …' : 'Aktualisieren'}</button>
+      </div>
+      ${body}
+    </section>
+    <a class="btn primary full" href="${esc(newEventLink(cal.config.calendarId))}" target="_blank" rel="noopener">＋ Termin eintragen</a>
+    <p class="hint">Öffnet Google Kalender. Achte darauf, dass euer WG-Kalender ausgewählt ist.</p>
+    <button class="btn outline full" data-action="calendar-settings">⚙️ Kalender-Einstellungen</button>`;
+}
+
+function openCalendarForm() {
+  $('#c-id').value = state.calendar.config?.calendarId ?? '';
+  $('#c-key').value = state.calendar.config?.apiKey ?? '';
+  $('#c-remove').hidden = !state.calendar.config;
+  $('#c-error').textContent = '';
+  $('#calendar-dialog').showModal();
+}
+
+function onSubmitCalendar(event) {
+  event.preventDefault();
+  const calendarId = $('#c-id').value.trim();
+  const apiKey = $('#c-key').value.trim();
+  const problem = !calendarId.includes('@') ? 'Die Kalender-ID sieht nicht richtig aus. Sie endet meist auf @group.calendar.google.com.'
+    : !/^AIza[\w-]{20,}$/.test(apiKey) ? 'Der API-Schlüssel sieht nicht richtig aus. Er beginnt mit „AIza“.'
+      : '';
+  if (problem) {
+    $('#c-error').textContent = problem;
+    return;
+  }
+  backend.set('settings', 'kalender', { calendarId, apiKey, updatedBy: state.me, updatedAt: backend.now() }).catch(showError);
+  $('#calendar-dialog').close();
+  toast('Kalender gespeichert ✓');
+}
+
+function removeCalendar() {
+  if (!confirm('Kalender von der Website trennen? Die Termine bei Google bleiben erhalten.')) return;
+  backend.remove('settings', 'kalender').catch(showError);
+  $('#calendar-dialog').close();
+}
+
 // ---------- Formular ----------
 
 function chip(name, type, value, label, checked) {
@@ -917,6 +1072,9 @@ function onClick(event) {
     case 'shop-clear': shopClear(); break;
     case 'quick-add': quickAdd(el.dataset.id); break;
     case 'quick-remove': quickRemove(el.dataset.id); break;
+    case 'calendar-settings': openCalendarForm(); break;
+    case 'calendar-reload': loadEvents(); break;
+    case 'calendar-remove': removeCalendar(); break;
     case 'quick-edit': state.quickEdit = !state.quickEdit; renderEinkauf(); break;
     case 'delete-expense': deleteExpense(); break;
     case 'mark-paid': markPaid(el.dataset.from, el.dataset.to, Number(el.dataset.amount)); break;
@@ -941,6 +1099,12 @@ $('#expense-form').addEventListener('submit', onSubmitExpense);
 $('#expense-form').addEventListener('input', updateSplitHint);
 $('#expense-form').addEventListener('change', updateSplitHint);
 $('#areas-form').addEventListener('submit', onSubmitAreas);
+$('#calendar-form').addEventListener('submit', onSubmitCalendar);
+// Termine regelmäßig und beim Zurückkehren zur App neu laden.
+setInterval(() => loadEvents(), 5 * 60 * 1000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - state.calendar.loadedAt > 60000) loadEvents();
+});
 $('#shop-form').addEventListener('submit', onSubmitShopping);
 // Tippen neben ein Formular schließt es.
 document.querySelectorAll('dialog').forEach((dialog) => dialog.addEventListener('click', (event) => {

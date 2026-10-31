@@ -71,6 +71,55 @@ Android/Chrome: Menü **⋮** → **„Zum Startbildschirm hinzufügen“**.
 
 ---
 
+## Teil D – Gemeinsamer Google-Kalender
+
+Am besten am Computer oder iPad im Browser (in der Kalender-App auf dem Handy
+geht das Anlegen nicht).
+
+### 1. Kalender anlegen
+1. Öffne **https://calendar.google.com/calendar/r/settings/createcalendar**
+2. Name: `WG Kölle` → **Kalender erstellen**.
+
+### 2. Mit Jana und Jul teilen
+1. Links unter „Einstellungen für meine Kalender“ auf **WG Kölle** tippen.
+2. Bei **„Für bestimmte Personen oder Gruppen freigeben“** → **Personen hinzufügen**.
+3. Adressen von Jana und Jul eintragen, Berechtigung:
+   **„Änderungen an Terminen vornehmen“** → **Senden**.
+   Die beiden bekommen eine E-Mail und sehen den Kalender dann in ihrer Kalender-App.
+
+### 3. Öffentlich freigeben (nötig, damit die Website die Termine sieht)
+1. Etwas weiter oben: **„Zugriffsberechtigungen für Termine“**.
+2. Haken bei **„Öffentlich freigeben“** → Warnung bestätigen.
+3. Daneben **„Alle Termindetails anzeigen“** auswählen.
+
+> Den Kalender findet nur, wer seine lange ID kennt. Trotzdem: nichts sehr
+> Privates eintragen.
+
+### 4. Kalender-ID kopieren
+1. Weiter unten bei **„Kalender integrieren“** steht die **Kalender-ID**
+   (endet auf `@group.calendar.google.com`). Kopieren.
+
+### 5. API-Schlüssel anlegen (damit die Website die Termine abholen darf)
+1. Google Calendar API einschalten:
+   **https://console.cloud.google.com/apis/library/calendar-json.googleapis.com?project=projekt-koelle**
+   → **Aktivieren**.
+2. Schlüssel anlegen:
+   **https://console.cloud.google.com/apis/credentials?project=projekt-koelle**
+   → **„+ Anmeldedaten erstellen“** → **„API-Schlüssel“**. Schlüssel kopieren (beginnt mit `AIza`).
+3. Schlüssel absichern: auf den neuen Schlüssel tippen →
+   - **Anwendungseinschränkungen:** „Websites“ → **Hinzufügen**:
+     `https://tritonfischbart.github.io/*`
+   - **API-Einschränkungen:** „Schlüssel einschränken“ → **Google Calendar API** auswählen.
+   - **Speichern**.
+
+### 6. In der App verbinden
+1. Website öffnen → unten **Kalender** → **„Kalender verbinden“**.
+2. Kalender-ID und API-Schlüssel einfügen → **Speichern**.
+3. Fertig – die Termine erscheinen. Neue Termine tragt ihr ganz normal in Google Kalender
+   im Kalender „WG Kölle“ ein.
+
+---
+
 ## Wenn etwas nicht klappt
 
 | Meldung | Lösung |
@@ -78,6 +127,8 @@ Android/Chrome: Menü **⋮** → **„Zum Startbildschirm hinzufügen“**.
 | „Fast geschafft! … noch nicht eingerichtet“ | Die Firebase-Daten aus Schritt 2 fehlen noch in `js/firebase-config.js`. |
 | „Website-Adresse ist in Firebase noch nicht freigegeben“ | Schritt 3.4 (Autorisierte Domains) prüfen. |
 | „Kein Zugang 🔒“ | Die Adresse fehlt in den Regeln (Schritt 5) oder ist falsch geschrieben. |
+| Kalender: „Kalender nicht gefunden“ | Kalender-ID prüfen und ob Schritt D3 (öffentlich) erledigt ist. |
+| Kalender: „Google lehnt den Zugriff ab“ | API-Schlüssel prüfen und ob die Calendar API aktiviert ist (D5). |
 | Jemand hat sich aus Versehen den falschen Namen ausgesucht | In Firebase → Firestore Database → Sammlung `members` → den falschen Eintrag löschen. Dann neu anmelden. |
 
 Ausprobieren ohne Einrichtung: an die Adresse `?demo` anhängen, z. B.

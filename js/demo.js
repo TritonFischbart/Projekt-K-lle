@@ -1,7 +1,7 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=5';
+import { weekKey } from './chores.js?v=6';
 
 function daysAgo(n) {
   const d = new Date();
@@ -33,7 +33,9 @@ export function createDemoBackend() {
       { id: 's1', createdAt: created(28), createdBy: 'jana', expenseCount: 2, totalCents: 5450 },
     ],
     chores: [],
-    settings: [],
+    settings: [
+      { id: 'kalender', calendarId: 'demo@group.calendar.google.com', apiKey: 'AIzaDemoDemoDemoDemoDemoDemo' },
+    ],
     favorites: [
       { id: 'milch', name: 'Milch', count: 6, lastUsed: created(2) },
       { id: 'klopapier', name: 'Klopapier', count: 4, lastUsed: created(3) },
@@ -111,5 +113,18 @@ export function createDemoBackend() {
     },
 
     now: () => new Date(),
+
+    // Beispieltermine statt echter Google-Termine
+    demoEvents() {
+      const at = (days, h, m = 0) => { const d = new Date(); d.setDate(d.getDate() + days); d.setHours(h, m, 0, 0); return d; };
+      const day = (days) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + days); return d; };
+      return [
+        { id: 'k1', title: 'WG-Abend: Pizza & Film', location: 'Wohnzimmer', allDay: false, start: at(0, 20), end: at(0, 23), link: '' },
+        { id: 'k2', title: 'Jana in Hamburg', location: '', allDay: true, start: day(1), end: day(4), link: '' },
+        { id: 'k3', title: 'Vermieter kommt (Heizung)', location: '', allDay: false, start: at(2, 9, 30), end: at(2, 10, 30), link: '' },
+        { id: 'k4', title: 'Sperrmüll', location: 'vor dem Haus', allDay: true, start: day(6), end: day(7), link: '' },
+        { id: 'k5', title: 'Geburtstag Jul 🎂', location: '', allDay: true, start: day(12), end: day(13), link: '' },
+      ];
+    },
   };
 }
