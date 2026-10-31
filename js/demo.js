@@ -1,7 +1,7 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=16';
+import { weekKey } from './chores.js?v=17';
 
 // Einfacher gezeichneter Grundriss als Beispielbild
 function demoFloorPlan() {

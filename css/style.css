@@ -405,7 +405,16 @@ main {
   background: var(--card); font-size: 1rem;
 }
 .area-row input:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
-.area-row .area-icon { width: 52px; flex: none; text-align: center; font-size: 1.3rem; padding: 4px; }
+.area-row .area-icon {
+  width: 52px; height: 44px; flex: none; display: grid; place-items: center;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--card); font-size: 1.4rem;
+}
+.icon-picker {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px;
+  margin-top: -4px; padding: 10px; border-radius: 14px; background: var(--bg); border: 1px solid var(--border);
+}
+.icon-choice { height: 44px; border: 1px solid transparent; border-radius: 10px; background: var(--card); font-size: 1.4rem; }
+.icon-choice.active { border-color: var(--brand); background: var(--brand-soft); }
 .area-row .area-name { font-weight: 600; }
 .area-row .icon-btn { flex: none; background: var(--card); }
 .sheet-form .hint { margin: 0; text-align: left; }
