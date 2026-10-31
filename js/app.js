@@ -2,11 +2,12 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=6';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=6';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=6';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=6';
-import { firebaseConfig } from './firebase-config.js?v=6';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=9';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=9';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=9';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=9';
+import { SHOP_CATEGORIES, guessCategory } from './shopcats.js?v=9';
+import { firebaseConfig } from './firebase-config.js?v=9';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -24,6 +25,7 @@ const state = {
   shopping: [],
   favorites: [],
   quickEdit: false,
+  shopCatItem: null,
   calendar: { config: null, events: null, error: null, loading: false, loadedAt: 0 },
   tab: 'ausgaben',
   editingId: null,
@@ -106,9 +108,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=6')).createDemoBackend();
+      backend = (await import('./demo.js?v=9')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=6')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=9')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -653,17 +655,23 @@ function renderEinkauf() {
   const done = state.shopping.filter((i) => i.doneBy)
     .sort((a, b) => toMillis(b.doneAt) - toMillis(a.doneAt));
 
+  const groups = SHOP_CATEGORIES
+    .map((cat) => ({ cat, items: open.filter((i) => shopCategoryOf(i) === cat.id) }))
+    .filter((g) => g.items.length);
   const openList = open.length
-    ? `<ul class="shop">${open.map((i) => `
-        <li class="shop-row">
-          <button class="shop-item" data-action="shop-toggle" data-id="${esc(i.id)}">
-            <span class="shop-check" aria-hidden="true"></span>
-            <span class="shop-name">${esc(i.name)}</span>
-            <span class="shop-meta">${esc(personName(i.addedBy))}</span>
-          </button>
-          <button class="icon-btn small" data-action="shop-delete" data-id="${esc(i.id)}" aria-label="${esc(i.name)} löschen">✕</button>
-        </li>`).join('')}</ul>
-       <p class="hint">Antippen, wenn du es besorgt hast.</p>`
+    ? `${groups.map((g) => `
+        <h3 class="shop-cat">${g.cat.icon} ${esc(g.cat.name)}</h3>
+        <ul class="shop">${g.items.map((i) => `
+          <li class="shop-row">
+            <button class="shop-item" data-action="shop-toggle" data-id="${esc(i.id)}">
+              <span class="shop-check" aria-hidden="true"></span>
+              <span class="shop-name">${esc(i.name)}</span>
+              <span class="shop-meta">${esc(personName(i.addedBy))}</span>
+            </button>
+            <button class="icon-btn small" data-action="shop-category" data-id="${esc(i.id)}" aria-label="Kategorie von ${esc(i.name)} ändern">${g.cat.icon}</button>
+            <button class="icon-btn small" data-action="shop-delete" data-id="${esc(i.id)}" aria-label="${esc(i.name)} löschen">✕</button>
+          </li>`).join('')}</ul>`).join('')}
+       <p class="hint">Antippen, wenn du es besorgt hast. Falsche Kategorie? Tippe auf das Symbol rechts.</p>`
     : '<p class="empty">Alles da! Nichts auf der Liste. 🎉</p>';
 
   const doneCard = done.length ? `
@@ -729,13 +737,15 @@ function addShoppingItems(names) {
   const onList = openShoppingNames();
   const fresh = [...new Set(names)].filter((n) => !onList.has(n.toLowerCase()));
   fresh.forEach((name) => {
-    backend.add('shopping', { name, addedBy: state.me, createdAt: backend.now(), doneBy: null, doneAt: null }).catch(showError);
-    // Mitzählen, wie oft etwas gebraucht wird.
     const id = favoriteId(name);
     const known = state.favorites.find((f) => f.id === id);
+    const category = known?.category ?? guessCategory(name);
+    backend.add('shopping', { name: known?.name ?? name, category, addedBy: state.me, createdAt: backend.now(), doneBy: null, doneAt: null }).catch(showError);
+    // Mitzählen, wie oft etwas gebraucht wird (und in welcher Kategorie).
     backend.set('favorites', id, {
       name: known?.name ?? name,
       count: (known?.count ?? 0) + 1,
+      category,
       lastUsed: backend.now(),
     }).catch(showError);
   });
@@ -750,6 +760,39 @@ function onSubmitShopping(event) {
   if (!names.length) return;
   addShoppingItems(names);
   input.value = '';
+}
+
+// Kategorie eines Einkaufs: gespeichert, sonst geraten.
+function shopCategoryOf(item) {
+  const id = item.category ?? guessCategory(item.name);
+  return SHOP_CATEGORIES.some((c) => c.id === id) ? id : 'sonstiges';
+}
+
+function openShopCategory(id) {
+  const item = state.shopping.find((i) => i.id === id);
+  if (!item) return;
+  state.shopCatItem = id;
+  const current = shopCategoryOf(item);
+  $('#shopcat-title').textContent = `Kategorie für „${item.name}“`;
+  $('#shopcat-list').innerHTML = SHOP_CATEGORIES.map((c) => `
+    <button type="button" class="chip-btn${c.id === current ? ' active' : ''}" data-action="shop-setcat" data-cat="${c.id}">${c.icon} ${esc(c.name)}</button>`).join('');
+  $('#shopcat-dialog').showModal();
+}
+
+function setShopCategory(category) {
+  const item = state.shopping.find((i) => i.id === state.shopCatItem);
+  $('#shopcat-dialog').close();
+  if (!item) return;
+  backend.update('shopping', item.id, { category }).catch(showError);
+  // Für das nächste Mal merken.
+  const favId = favoriteId(item.name);
+  const known = state.favorites.find((f) => f.id === favId);
+  backend.set('favorites', favId, {
+    name: known?.name ?? item.name,
+    count: known?.count ?? 0,
+    lastUsed: known?.lastUsed ?? backend.now(),
+    category,
+  }).catch(showError);
 }
 
 function quickAdd(id) {
@@ -870,7 +913,7 @@ function renderKalender() {
             <li><a class="event" href="${esc(e.link)}" target="_blank" rel="noopener">
               <span class="event-time">${eventTime(e, g.day)}</span>
               <span class="event-main">
-                <span class="event-title">${esc(e.title)}</span>
+                <span class="event-title${e.hiddenTitle ? ' muted' : ''}">${esc(e.title)}</span>
                 ${e.location ? `<span class="event-sub">📍 ${esc(e.location)}</span>` : ''}
               </span>
             </a></li>`).join('')}</ul>
@@ -878,7 +921,17 @@ function renderKalender() {
       : '<p class="empty">In den nächsten 60 Tagen steht nichts an.</p>';
   }
 
+  const allHidden = cal.events?.length > 0 && cal.events.every((e) => e.hiddenTitle);
+  const titleHint = allHidden ? `
+    <section class="card notice">
+      <strong>Die Titel der Termine sind nicht sichtbar.</strong>
+      <p>Google gibt gerade nur „frei/belegt“ heraus. In Google Kalender bei „WG Kölle“ →
+      „Zugriffsberechtigungen für Termine“ neben „Öffentlich freigeben“
+      <strong>„Alle Termindetails anzeigen“</strong> auswählen. Danach hier auf „Aktualisieren“ tippen.</p>
+    </section>` : '';
+
   el.innerHTML = `
+    ${titleHint}
     <section class="card">
       <div class="card-head">
         <h2>Nächste Termine</h2>
@@ -1071,6 +1124,8 @@ function onClick(event) {
     case 'shop-delete': shopDelete(el.dataset.id); break;
     case 'shop-clear': shopClear(); break;
     case 'quick-add': quickAdd(el.dataset.id); break;
+    case 'shop-category': openShopCategory(el.dataset.id); break;
+    case 'shop-setcat': setShopCategory(el.dataset.cat); break;
     case 'quick-remove': quickRemove(el.dataset.id); break;
     case 'calendar-settings': openCalendarForm(); break;
     case 'calendar-reload': loadEvents(); break;
