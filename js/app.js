@@ -2,15 +2,15 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=10';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=10';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee, mondayOfWeekKey } from './chores.js?v=10';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=10';
-import { SHOP_CATEGORIES, guessCategory } from './shopcats.js?v=10';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=10';
-import { monthStats, monthTrend, currentMonth, choreStats } from './stats.js?v=10';
-import { toPlain, expensesCsv } from './export.js?v=10';
-import { firebaseConfig } from './firebase-config.js?v=10';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=11';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=11';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=11';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=11';
+import { SHOP_CATEGORIES, guessCategory } from './shopcats.js?v=11';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=11';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=11';
+import { toPlain, expensesCsv } from './export.js?v=11';
+import { firebaseConfig } from './firebase-config.js?v=11';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -119,9 +119,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=10')).createDemoBackend();
+      backend = (await import('./demo.js?v=11')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=10')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=11')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -314,7 +314,7 @@ function balancesCard(balances) {
       <li class="row">
         ${avatar(p.id)}
         <span class="row-name">${esc(p.name)}${p.id === state.me ? ' (du)' : ''}<small>${label}</small></span>
-        <span class="amount ${amountClass(b)}">${b === 0 ? '–' : formatEuro(Math.abs(b))}</span>
+        <span class="amount ${amountClass(b)}">${b === 0 ? '–' : `${b > 0 ? '+' : '−'} ${formatEuro(Math.abs(b))}`}</span>
       </li>`;
   }).join('');
   return `<section class="card"><h2>Kontostände</h2><ul class="rows">${rows}</ul></section>`;
@@ -698,35 +698,7 @@ function renderPutzplan() {
       <p class="hint">Jemand hat spontan Zeit? Mit „Ich übernehme“ könnt ihr Aufgaben tauschen.</p>
     </section>
     <button class="btn outline full" data-action="edit-areas">✏️ Bereiche bearbeiten</button>
-    ${upcomingCard()}
-    ${choreStatsCard()}`;
-}
-
-function choreStatsCard() {
-  const areas = choreAreas();
-  const docs = Object.values(state.chores);
-  if (!docs.some((c) => c.doneBy)) return '';
-  // Wer war laut Plan dran? (Bereiche, die es nicht mehr gibt, zählen nur als "erledigt")
-  const planned = (c) => {
-    const index = areas.findIndex((a) => a.id === c.chore);
-    if (index < 0 || !c.week) return null;
-    return defaultAssignee(PERSON_IDS, index, weekIndex(mondayOfWeekKey(c.week)));
-  };
-  const stats = choreStats(PERSON_IDS, docs, planned);
-  const max = Math.max(...PERSON_IDS.map((id) => stats[id].done), 1);
-  return `
-    <section class="card">
-      <h2>Wer hat wie oft geputzt?</h2>
-      <ul class="rows">${PEOPLE.map((p) => `
-        <li class="row">
-          ${avatar(p.id)}
-          <span class="row-name">${esc(p.name)}${p.id === state.me ? ' (du)' : ''}
-            <small>✓ ${stats[p.id].done}× erledigt · 🔄 ${stats[p.id].taken}× übernommen</small>
-            <span class="bar-track"><span class="bar-fill" style="width:${Math.max(3, (stats[p.id].done / max) * 100)}%"></span></span>
-          </span>
-        </li>`).join('')}</ul>
-      <p class="hint">Gezählt seit Beginn des Putzplans.</p>
-    </section>`;
+    ${upcomingCard()}`;
 }
 
 // ---------- Putzplan-Bereiche bearbeiten ----------

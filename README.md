@@ -5,7 +5,7 @@ Die WG-Website von Jana, Jul und Lukas.
 - 💶 **Ausgaben** – wer hat was bezahlt, wer schuldet wem wie viel, Ausgleichen mit möglichst wenigen Überweisungen, Daueraufträge und Monatsübersicht
 - 📅 **Kalender** – Termine aus dem gemeinsamen Google-Kalender, „Heute“ auf der Startseite
 - 🛒 **Einkauf** – gemeinsame Einkaufsliste, sortiert wie im Supermarkt, mit Schnellauswahl; Besorgtes wird durchgestrichen
-- 🧹 **Putzplan** – Bereiche direkt in der App bearbeitbar; wechselt jede Woche, mit Erledigt-Haken, „Ich übernehme“ und Statistik
+- 🧹 **Putzplan** – Bereiche direkt in der App bearbeitbar; wechselt jede Woche, mit Erledigt-Haken und „Ich übernehme“
 - 📌 **Infos** – Schwarzes Brett und Datensicherung
 
 Einrichtung: siehe [ANLEITUNG.md](ANLEITUNG.md). Notizen für Claude: [CLAUDE.md](CLAUDE.md).
@@ -23,7 +23,7 @@ Ausprobieren ohne Einrichtung: die Website mit `?demo` am Ende der Adresse öffn
 | `js/calendar.js` | Kalender: Termine von Google abholen und sortieren |
 | `js/shopcats.js` | Einkauf: Kategorien in Supermarkt-Reihenfolge |
 | `js/recurring.js` | Daueraufträge |
-| `js/stats.js` | Monatsübersicht und Putz-Statistik |
+| `js/stats.js` | Monatsübersicht |
 | `js/export.js` | Datensicherung |
 | `js/config.js` | Namen, Kategorien und Standard-Putzbereiche |
 | `js/firebase-config.js` | Verbindungsdaten zu Firebase |

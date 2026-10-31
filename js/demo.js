@@ -1,7 +1,7 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=10';
+import { weekKey } from './chores.js?v=11';
 
 function thisMonth() {
   const d = new Date();
@@ -77,12 +77,6 @@ export function createDemoBackend() {
 
   // Putzplan-Beispiel: In dieser Woche hat schon jemand eine Aufgabe erledigt.
   const key = weekKey(new Date());
-  // Erledigte Aufgaben aus den letzten Wochen (für die Putz-Statistik)
-  [[7, 'bad', 'jana'], [7, 'kueche', 'julian'], [7, 'boeden', 'lukas'], [14, 'bad', 'lukas'], [14, 'kueche', 'jana'], [14, 'boeden', 'jana']]
-    .forEach(([ago, chore, who]) => {
-      const k = weekKey(new Date(Date.now() - ago * 86400000));
-      store.chores.push({ id: `${k}_${chore}`, week: k, chore, assignee: who, doneBy: who, doneAt: created(ago) });
-    });
   store.chores.push({ id: `${key}_kueche`, week: key, chore: 'kueche', assignee: 'jana', doneBy: 'jana', doneAt: new Date() });
 
   const listeners = {};

@@ -9,8 +9,6 @@
   --brand: #c8102e;
   --brand-dark: #a00c24;
   --brand-soft: #fbe8eb;
-  /* Bedeutungsfarben: Grün = bekommt Geld, Rot = schuldet */
-  --green: #2f7d4f;
   --red: #b42318;
   --red-soft: #fbeae8;
   --shadow: 0 1px 2px rgba(40, 20, 22, 0.06), 0 4px 16px rgba(40, 20, 22, 0.05);
@@ -29,7 +27,6 @@
     --brand: #ef4a5f;
     --brand-dark: #ff8794;
     --brand-soft: #3a1c21;
-    --green: #4caf75;
     --red: #ff7a6b;
     --red-soft: #3a1f1c;
     --shadow: none;
@@ -174,8 +171,8 @@ main {
 .card-head h2 { margin: 0; }
 
 .hero { text-align: center; padding: 22px 18px; border: 0; }
-.hero.plus { background: var(--green); color: #fff; }
-.hero.minus { background: var(--red); color: #fff; }
+.hero.plus { background: var(--brand); color: #fff; }
+.hero.minus { background: var(--brand-dark); color: #fff; }
 .hero.even { background: var(--brand-soft); }
 .hero-label { margin: 0; font-weight: 600; opacity: 0.9; }
 .hero-amount { margin: 4px 0 0; font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em; }
@@ -200,8 +197,8 @@ main {
 .avatar.small { width: 28px; height: 28px; font-size: 0.8rem; }
 
 .amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.amount.plus { color: var(--green); }
-.amount.minus { color: var(--red); }
+.amount.plus { color: var(--text); }
+.amount.minus { color: var(--brand); }
 .amount.even { color: var(--muted); font-weight: 600; }
 
 /* ---------- Ausgleichen ---------- */
@@ -382,7 +379,7 @@ main {
 .chore-who { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-weight: 600; font-size: 0.92rem; }
 .chore-who em { font-style: normal; font-weight: 400; color: var(--muted); }
 .chore-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-.done-label { color: var(--green); font-weight: 700; font-size: 0.9rem; }
+.done-label { color: var(--brand); font-weight: 700; font-size: 0.9rem; }
 
 .plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .plan-row { display: grid; grid-template-columns: 52px repeat(3, 1fr); gap: 6px; align-items: center; }

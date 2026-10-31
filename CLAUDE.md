@@ -22,9 +22,9 @@ früheren Gesprächen besprochen und entschieden wurde.
 - **Immer auf Deutsch**, einfach und ohne Fachchinesisch erklären. Lukas ist
   Anfänger und kann nicht programmieren.
 - Fachbegriffe kurz erklären (z. B. „Pull Request = Anfrage, die Änderungen zu übernehmen“).
-- **Nach jeder fertigen Änderung automatisch eine Pull Request nach `main`
-  erstellen** (Lukas hat das ausdrücklich erlaubt) und den Link schicken.
-  Lukas tippt dann selbst auf „Merge pull request“ → „Confirm merge“.
+- **Nach jeder fertigen und getesteten Änderung eine Pull Request nach `main`
+  erstellen und sie selbst mergen** (Lukas hat das ausdrücklich so gewünscht).
+  Danach den Link schicken und kurz sagen, dass es in ein paar Minuten online ist.
 - Vor dem Weiterarbeiten prüfen, ob die letzte Pull Request schon gemergt ist.
   Wenn ja: Arbeitszweig neu von `main` starten. Wenn sie noch offen ist:
   weitere Commits auf denselben Zweig (die PR aktualisiert sich).
@@ -69,7 +69,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `js/calendar.js` | Google-Termine abholen und nach Tagen gruppieren |
 | `js/shopcats.js` | Einkaufs-Kategorien (Supermarkt-Reihenfolge) + automatische Zuordnung |
 | `js/recurring.js` | Daueraufträge: welche Monate fällig sind |
-| `js/stats.js` | Monatsübersicht der Ausgaben, Putz-Statistik |
+| `js/stats.js` | Monatsübersicht der Ausgaben |
 | `js/export.js` | Datensicherung (JSON) und Ausgaben-Tabelle (CSV für Excel) |
 | `js/firebase.js` | Firebase-Anbindung (Backend) |
 | `js/demo.js` | Demo-Backend mit Beispieldaten (`?demo`) |
@@ -113,10 +113,11 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 
 ### Allgemein
 - Name **„Projekt Kölle“**, Logo: **Kölner Dom** (Westfassade, zwei Türme), weiß auf rotem Grund.
-- Design in den **Kölner Stadtfarben Rot und Weiß** (`--brand: #c8102e`, rote Kopfzeile,
-  weißer Hintergrund). Anfangs war es grün – Lukas wollte es später rot-weiß.
-  **Grün** (`--green`) nur noch als Bedeutungsfarbe für „bekommt Geld“ / „erledigt“,
-  `--red` für „schuldet“.
+- Design konsequent in den **Kölner Stadtfarben Rot und Weiß** (`--brand: #c8102e`,
+  rote Kopfzeile, weißer Hintergrund, rotes Logo). Anfangs war es grün – Lukas wollte
+  ausdrücklich **kein Grün mehr im Design**. Wer Geld bekommt/schuldet, zeigen Text und
+  Vorzeichen (+ / −), nicht die Farbe. (Lukas' Personenfarbe ist weiterhin grün.)
+- Lukas wollte **keine Putz-Statistik** („wer wie oft geputzt hat“) – klingt blöd. Nicht wieder einbauen.
 - Personen-Reihenfolge: **Jana, Jul, Lukas**. Farben: Jana hellbraun `#a97b50`,
   Jul blau `#2b6cb0`, Lukas grün `#2f7d4f`.
 - Untere Leiste: **Ausgaben · Einkauf · Putzplan · Kalender · Infos**.
@@ -155,7 +156,6 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - Wechsel **jede Woche** (Montag), Rotation der Reihe nach.
 - „Erledigt ✓“, „Ich übernehme“ (spontan tauschen), „Zurückgeben“.
 - Erinnerungen vorerst nur als Hinweis in der App (roter Punkt, Startseite).
-- **Statistik**: wer wie oft erledigt bzw. übernommen hat (seit Beginn).
 
 ### 📌 Infos
 - **Schwarzes Brett**: Notizen mit Vorlagen (WLAN, Vermieter, Zählerstände, Schlüssel,

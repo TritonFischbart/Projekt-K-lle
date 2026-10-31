@@ -1,6 +1,6 @@
-// Auswertungen: Monatsübersicht der Ausgaben und Putz-Statistik.
+// Auswertungen: Monatsübersicht der Ausgaben.
 
-import { monthKey, addMonths } from './recurring.js?v=10';
+import { monthKey, addMonths } from './recurring.js?v=11';
 
 export function monthStats(expenses, month) {
   const inMonth = expenses.filter((e) => (e.date ?? '').startsWith(month));
@@ -24,15 +24,3 @@ export function monthTrend(expenses, month, n = 6) {
 }
 
 export const currentMonth = () => monthKey(new Date());
-
-// Wer hat wie oft geputzt bzw. übernommen?
-// chores: gespeicherte Wochen-Einträge; planned(doc) liefert, wer laut Plan dran war.
-export function choreStats(peopleIds, chores, planned) {
-  const stats = Object.fromEntries(peopleIds.map((id) => [id, { done: 0, taken: 0 }]));
-  for (const c of chores) {
-    if (c.doneBy && stats[c.doneBy]) stats[c.doneBy].done += 1;
-    const plan = planned(c);
-    if (plan && c.assignee && c.assignee !== plan && stats[c.assignee]) stats[c.assignee].taken += 1;
-  }
-  return stats;
-}

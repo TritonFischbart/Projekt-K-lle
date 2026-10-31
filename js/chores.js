@@ -39,9 +39,3 @@ export function defaultAssignee(peopleIds, choreIndex, weekIdx) {
   return peopleIds[(((choreIndex + weekIdx) % n) + n) % n];
 }
 
-// "2026-W44" -> Montag dieser Woche
-export function mondayOfWeekKey(key) {
-  const [year, week] = key.split('-W').map(Number);
-  const jan4 = new Date(year, 0, 4);
-  return addDays(mondayOf(jan4), (week - 1) * 7);
-}
