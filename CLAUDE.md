@@ -195,6 +195,11 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 
 ## Merkliste / To-do für später (noch nicht gebaut)
 
+> Die Aufgaben stehen auch als **GitHub-Issues** im Projekt (Reiter „Issues“):
+> #10 Test mit Jana und Jul · #11 Termine direkt eintragen · #12 Push-Nachrichten ·
+> #13 Kassenbon-Fotos · #14 Müllabfuhr-Termine · #15 Ideen-Sammlung.
+> Wenn etwas davon erledigt ist, das Issue schließen und hier austragen.
+
 - **Termine direkt in der App eintragen** (statt über Google Kalender). Von Lukas
   ausdrücklich auf die Merkliste gesetzt. Hürde: Schreibzugriff auf Google Kalender
   braucht eine Google-Anmeldung mit Kalender-Berechtigung (OAuth, Zustimmungsbildschirm
@@ -205,7 +210,10 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   „Blaze“ mit Kreditkarte. Vorher mit Lukas klären.
 - **Kassenbon-Fotos** bei Ausgaben – bräuchte Firebase Storage (ebenfalls „Blaze“).
 - **Müllabfuhr-Termine** der AWB Köln in den Google-Kalender übernehmen (ohne Code).
-- Prüfen, ob die Google-Anmeldung in der Home-Bildschirm-App auf allen Handys klappt.
+- Prüfen, ob die Google-Anmeldung in der Home-Bildschirm-App auf allen Handys klappt
+  (Teil des Tests mit Jana und Jul, #10).
+- **Ideen-Sammlung** (#15, erst nach dem Test entscheiden): mehrere Einkaufslisten,
+  „Ich geh jetzt einkaufen“, Schnell-Notizen auf der Startseite, Bewertung für den WG-Abend.
 
 ## Testen
 
