@@ -63,7 +63,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | Datei | Inhalt |
 |---|---|
 | `index.html` | Gerüst, Tabs, Dialoge (Ausgabe, Putz-Bereiche, Kalender, Einkaufs-Kategorie) |
-| `css/style.css` | Design (rot-weiß, immer hell, Handy & iPad) |
+| `css/style.css` | Design (rot-weiß, hell/dunkel, Handy & iPad) |
 | `js/app.js` | Hauptprogramm: Anmeldung, Anzeige, Bedienung aller Bereiche |
 | `js/config.js` | Personen (Reihenfolge/Farben), Ausgaben-Kategorien, Standard-Putzbereiche |
 | `js/money.js` | Geld in Cent, Aufteilen, Kontostände, Ausgleichs-Vorschlag |
@@ -122,8 +122,8 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   rote Kopfzeile, weißer Hintergrund, rotes Logo). Anfangs war es grün – Lukas wollte
   ausdrücklich **kein Grün mehr im Design**. Wer Geld bekommt/schuldet, zeigen Text und
   Vorzeichen (+ / −), nicht die Farbe. (Lukas' Personenfarbe ist weiterhin grün.)
-- **Immer heller Hintergrund** – kein Dunkelmodus, auch wenn das Handy auf dunkel steht
-  (Lukas fand das helle Design auf den Testbildern „perfekt“).
+- **Hell/Dunkel wechselt automatisch** mit der Einstellung des Handys – das ist ausdrücklich
+  gewünscht (kurz war es „immer hell“, Lukas wollte den automatischen Wechsel zurück).
 - Lukas wollte **keine Putz-Statistik** („wer wie oft geputzt hat“) – klingt blöd. Nicht wieder einbauen.
 - Personen-Reihenfolge: **Jana, Jul, Lukas**. Farben: Jana hellbraun `#a97b50`,
   Jul blau `#2b6cb0`, Lukas grün `#2f7d4f`.
