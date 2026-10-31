@@ -453,3 +453,23 @@ main {
 }
 .quick.editing .quick-chip { border-color: var(--red); background: var(--red-soft); color: var(--red); }
 #shop-quick:empty { display: none; }
+
+/* ---------- Kalender ---------- */
+.day + .day { margin-top: 14px; }
+.day-title { margin: 0 0 6px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.day-title.today { color: var(--green); }
+.events { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.event {
+  display: flex; gap: 12px; align-items: baseline;
+  padding: 10px 12px; border-radius: 12px;
+  background: var(--bg); color: inherit; text-decoration: none;
+  border-left: 4px solid var(--green);
+}
+.event-time { flex: none; width: 92px; color: var(--muted); font-size: 0.85rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.event-main { flex: 1; min-width: 0; display: grid; }
+.event-title { font-weight: 600; overflow-wrap: anywhere; }
+.event-sub { color: var(--muted); font-size: 0.85rem; }
+.center-pad { display: grid; place-items: center; padding: 24px; }
+.soon .btn { justify-self: center; margin-top: 8px; }
+a.btn.full { width: 100%; }
+#tab-kalender > .hint { margin: -6px 0 0; text-align: center; }
