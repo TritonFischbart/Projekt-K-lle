@@ -2,12 +2,12 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=8';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=8';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=8';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=8';
-import { SHOP_CATEGORIES, guessCategory } from './shopcats.js?v=8';
-import { firebaseConfig } from './firebase-config.js?v=8';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=9';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=9';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=9';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=9';
+import { SHOP_CATEGORIES, guessCategory } from './shopcats.js?v=9';
+import { firebaseConfig } from './firebase-config.js?v=9';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -108,9 +108,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=8')).createDemoBackend();
+      backend = (await import('./demo.js?v=9')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=8')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=9')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;

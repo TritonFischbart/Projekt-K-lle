@@ -61,7 +61,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | Datei | Inhalt |
 |---|---|
 | `index.html` | Gerüst, Tabs, Dialoge (Ausgabe, Putz-Bereiche, Kalender, Einkaufs-Kategorie) |
-| `css/style.css` | Design (grün, hell/dunkel, Handy & iPad) |
+| `css/style.css` | Design (rot-weiß, hell/dunkel, Handy & iPad) |
 | `js/app.js` | Hauptprogramm: Anmeldung, Anzeige, Bedienung aller Bereiche |
 | `js/config.js` | Personen (Reihenfolge/Farben), Ausgaben-Kategorien, Standard-Putzbereiche |
 | `js/money.js` | Geld in Cent, Aufteilen, Kontostände, Ausgleichs-Vorschlag |
@@ -102,7 +102,11 @@ früheren Gesprächen besprochen und entschieden wurde.
 ## Funktionen und Entscheidungen
 
 ### Allgemein
-- Name **„Projekt Kölle“**, Farbe **grün**, Logo: **Kölner Dom** (Westfassade, zwei Türme).
+- Name **„Projekt Kölle“**, Logo: **Kölner Dom** (Westfassade, zwei Türme), weiß auf rotem Grund.
+- Design in den **Kölner Stadtfarben Rot und Weiß** (`--brand: #c8102e`, rote Kopfzeile,
+  weißer Hintergrund). Anfangs war es grün – Lukas wollte es später rot-weiß.
+  **Grün** (`--green`) nur noch als Bedeutungsfarbe für „bekommt Geld“ / „erledigt“,
+  `--red` für „schuldet“.
 - Personen-Reihenfolge: **Jana, Jul, Lukas**. Farben: Jana hellbraun `#a97b50`,
   Jul blau `#2b6cb0`, Lukas grün `#2f7d4f`.
 - Untere Leiste: **Ausgaben · Einkauf · Putzplan · Kalender**.
