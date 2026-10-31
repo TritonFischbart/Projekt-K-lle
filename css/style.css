@@ -14,25 +14,9 @@
   --shadow: 0 1px 2px rgba(40, 20, 22, 0.06), 0 4px 16px rgba(40, 20, 22, 0.05);
   --radius: 18px;
   --tabbar-h: 64px;
-  color-scheme: light;
+  color-scheme: light; /* immer helles Design, auch wenn das Handy im Dunkelmodus ist */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #151112;
-    --card: #1f191a;
-    --text: #f0e8e9;
-    --muted: #a8999b;
-    --border: #352a2c;
-    --brand: #ff3b42;
-    --brand-dark: #ff8a8f;
-    --brand-soft: #3d1a1b;
-    --red: #ff7a6b;
-    --red-soft: #3a1f1c;
-    --shadow: none;
-    color-scheme: dark;
-  }
-}
 
 * { box-sizing: border-box; }
 
@@ -488,9 +472,6 @@ a.btn.full { width: 100%; }
 .event-title.muted { color: var(--muted); font-style: italic; font-weight: 400; }
 .card.notice { background: #fff4d6; border-color: #f0dca0; color: #5c4400; }
 .card.notice p { margin: 6px 0 0; font-size: 0.92rem; }
-@media (prefers-color-scheme: dark) {
-  .card.notice { background: #3a3218; border-color: #5a4c20; color: #f3e3b0; }
-}
 
 /* ---------- Monatsübersicht ---------- */
 .icon-btn[disabled] { opacity: 0.35; cursor: default; }

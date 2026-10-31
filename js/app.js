@@ -2,16 +2,16 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=13';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=13';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=13';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=13';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=13';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=13';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=13';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=13';
-import { toPlain, expensesCsv } from './export.js?v=13';
-import { firebaseConfig } from './firebase-config.js?v=13';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=14';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=14';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=14';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=14';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=14';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=14';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=14';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=14';
+import { toPlain, expensesCsv } from './export.js?v=14';
+import { firebaseConfig } from './firebase-config.js?v=14';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -138,9 +138,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=13')).createDemoBackend();
+      backend = (await import('./demo.js?v=14')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=13')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=14')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
