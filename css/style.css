@@ -494,3 +494,33 @@ a.btn.full { width: 100%; }
 @media (prefers-color-scheme: dark) {
   .card.notice { background: #3a3218; border-color: #5a4c20; color: #f3e3b0; }
 }
+
+/* ---------- Monatsübersicht ---------- */
+.icon-btn[disabled] { opacity: 0.35; cursor: default; }
+.month-total { margin: 4px 0 12px; text-align: center; font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.month-total small { display: block; font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+.trend { display: flex; align-items: flex-end; gap: 8px; height: 96px; margin-bottom: 8px; }
+.trend-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.trend-bar { width: 100%; max-width: 36px; border-radius: 6px 6px 2px 2px; background: var(--brand-soft); }
+.trend-col.active .trend-bar { background: var(--brand); }
+.trend-col span { font-size: 0.72rem; color: var(--muted); }
+.trend-col.active span { color: var(--text); font-weight: 700; }
+.sub-title { margin: 16px 0 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+
+/* ---------- Putz-Statistik ---------- */
+.row-name .bar-track { display: block; margin-top: 6px; }
+.row-name .bar-fill { display: block; }
+
+/* ---------- Infos: Schwarzes Brett ---------- */
+.card .hint.left { text-align: left; margin: 0 0 10px; }
+.note-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1rem; }
+.note-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; color: var(--muted); font-size: 0.82rem; }
+.field textarea, .field select {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--bg); font: inherit; font-size: 1rem; color: inherit;
+}
+.field select { min-height: 48px; }
+.field textarea { resize: vertical; min-height: 120px; }
+.field textarea:focus, .field select:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
+.tabbar button { font-size: 0.7rem; }

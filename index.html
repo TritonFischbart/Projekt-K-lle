@@ -11,8 +11,8 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/style.css?v=9">
-  <script type="module" src="js/app.js?v=9"></script>
+  <link rel="stylesheet" href="css/style.css?v=10">
+  <script type="module" src="js/app.js?v=10"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -81,6 +81,8 @@
 
       <section id="tab-kalender" class="tab" hidden></section>
 
+      <section id="tab-infos" class="tab" hidden></section>
+
       <section id="tab-putzplan" class="tab" hidden></section>
     </main>
 
@@ -91,6 +93,7 @@
       <button data-action="tab" data-tab="einkauf"><span class="tab-icon">🛒</span>Einkauf</button>
       <button data-action="tab" data-tab="putzplan"><span class="tab-icon">🧹</span>Putzplan</button>
       <button data-action="tab" data-tab="kalender"><span class="tab-icon">📅</span>Kalender</button>
+      <button data-action="tab" data-tab="infos"><span class="tab-icon">📌</span>Infos</button>
     </nav>
   </div>
 
@@ -131,9 +134,15 @@
         <p class="hint" id="f-split-hint"></p>
       </fieldset>
 
-      <label class="field">
+      <label class="field" id="f-date-row">
         <span class="label">Datum</span>
         <input type="date" id="f-date">
+      </label>
+
+      <label class="field" id="f-day-row" hidden>
+        <span class="label">Jeden Monat am</span>
+        <select id="f-day"></select>
+        <span class="hint">Wird an diesem Tag automatisch als Ausgabe eingetragen.</span>
       </label>
 
       <p class="error" id="f-error"></p>
@@ -181,6 +190,29 @@
       <p class="error" id="c-error"></p>
       <div class="form-actions">
         <button type="button" class="btn danger" id="c-remove" data-action="calendar-remove">Trennen</button>
+        <button type="submit" class="btn primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Formular: Notiz am Schwarzen Brett -->
+  <dialog id="note-dialog" class="sheet">
+    <form id="note-form" class="sheet-form" novalidate>
+      <div class="sheet-head">
+        <h2 id="note-title-head">Neue Notiz</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <label class="field">
+        <span class="label">Überschrift</span>
+        <input id="n-title" maxlength="60" placeholder="z. B. WLAN" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="label">Text</span>
+        <textarea id="n-text" rows="6" maxlength="2000" placeholder="z. B. Netzwerk: FRITZ!Box 7590&#10;Passwort: …"></textarea>
+      </label>
+      <p class="error" id="n-error"></p>
+      <div class="form-actions">
+        <button type="button" class="btn danger" id="n-delete" data-action="note-delete">Löschen</button>
         <button type="submit" class="btn primary">Speichern</button>
       </div>
     </form>

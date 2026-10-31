@@ -68,6 +68,9 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `js/chores.js` | Putzplan: Wochen (ISO-KW, ab Montag), Rotation |
 | `js/calendar.js` | Google-Termine abholen und nach Tagen gruppieren |
 | `js/shopcats.js` | Einkaufs-Kategorien (Supermarkt-Reihenfolge) + automatische Zuordnung |
+| `js/recurring.js` | Daueraufträge: welche Monate fällig sind |
+| `js/stats.js` | Monatsübersicht der Ausgaben, Putz-Statistik |
+| `js/export.js` | Datensicherung (JSON) und Ausgaben-Tabelle (CSV für Excel) |
 | `js/firebase.js` | Firebase-Anbindung (Backend) |
 | `js/demo.js` | Demo-Backend mit Beispieldaten (`?demo`) |
 | `manifest.webmanifest`, `icons/` | App-Symbol (Kölner Dom) für den Home-Bildschirm |
@@ -98,6 +101,13 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `settings/kalender` | `calendarId`, `apiKey` |
 | `shopping` | Einkaufsliste: `name, category, addedBy, doneBy, doneAt` |
 | `favorites/{name}` | Wie oft etwas gekauft wurde + gemerkte Kategorie (Schnellauswahl) |
+| `recurring` | Daueraufträge: `description, amountCents, paidBy, splitAmong, category, dayOfMonth (1–28), lastBooked ("2026-11")` |
+| `notes` | Schwarzes Brett: `title, text, createdBy, updatedBy` |
+| `settings/backup` | Wann zuletzt gesichert wurde (`at`, `by`) |
+
+Ausgaben aus Daueraufträgen haben die feste ID `rec_{auftrag}_{monat}` und das Feld
+`recurringId` – so wird auch bei zwei gleichzeitig geöffneten Handys nichts doppelt gebucht.
+Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 
 ## Funktionen und Entscheidungen
 
@@ -109,7 +119,7 @@ früheren Gesprächen besprochen und entschieden wurde.
   `--red` für „schuldet“.
 - Personen-Reihenfolge: **Jana, Jul, Lukas**. Farben: Jana hellbraun `#a97b50`,
   Jul blau `#2b6cb0`, Lukas grün `#2f7d4f`.
-- Untere Leiste: **Ausgaben · Einkauf · Putzplan · Kalender**.
+- Untere Leiste: **Ausgaben · Einkauf · Putzplan · Kalender · Infos**.
 - Startseite (Ausgaben) zeigt oben Hinweise: „Heute in der WG“ (Kalender) und
   „Diese Woche bist du dran mit …“ (Putzplan).
 - Kann als App auf den Home-Bildschirm gelegt werden (Manifest + Icons).
@@ -122,11 +132,17 @@ früheren Gesprächen besprochen und entschieden wurde.
 - „Ausgeglichen“: beides gewünscht – einzelne Überweisungen abhaken **und**
   „Alles ausgeglichen – neu starten“ (alles auf 0, alte Einträge unter
   „Frühere Abrechnungen“).
+- **Monatsübersicht**: Summe pro Monat, Balken der letzten 6 Monate, nach Kategorie
+  und nach Person (zählt alle Ausgaben, auch abgerechnete).
+- **Daueraufträge** (z. B. Internet, Netflix): werden am gewählten Tag (1.–28.)
+  automatisch eingetragen, sobald jemand die App öffnet. Markiert mit 🔁.
 
 ### 🛒 Einkauf
 - Jeder trägt ein, was fehlt (mehrere mit Komma). Antippen = besorgt
   (durchgestrichen, mit Name). „Liste aufräumen“ entfernt Besorgtes.
 - **Schnellauswahl**: ab 2× eingetragen erscheint ein Knopf; „Bearbeiten“ zum Entfernen.
+- **Als Ausgabe eintragen**: eigene besorgte Sachen werden mit einem Tipp als Ausgabe
+  vorausgefüllt (nur noch Betrag eingeben).
 - **Kategorien in Supermarkt-Reihenfolge** (orientiert am Weg durch einen
   typischen Laden): Obst & Gemüse → Brot → Kühlregal → Fleisch & Fisch → Tiefkühl
   → Vorrat → Frühstück → Süßes → Getränke → Drogerie → Haushalt → Sonstiges.
@@ -139,6 +155,15 @@ früheren Gesprächen besprochen und entschieden wurde.
 - Wechsel **jede Woche** (Montag), Rotation der Reihe nach.
 - „Erledigt ✓“, „Ich übernehme“ (spontan tauschen), „Zurückgeben“.
 - Erinnerungen vorerst nur als Hinweis in der App (roter Punkt, Startseite).
+- **Statistik**: wer wie oft erledigt bzw. übernommen hat (seit Beginn).
+
+### 📌 Infos
+- **Schwarzes Brett**: Notizen mit Vorlagen (WLAN, Vermieter, Zählerstände, Schlüssel,
+  Notfall). „Text kopieren“ z. B. fürs WLAN-Passwort.
+- **Datensicherung**: „Alle Daten sichern“ (JSON, ohne API-Schlüssel) und „Ausgaben
+  als Tabelle (Excel)“. Auf dem Handy über „Teilen“ speichern. Hinweis, wenn die letzte
+  Sicherung über 30 Tage her ist. Ein Wiederherstellen gibt es (noch) nicht – bei Bedarf
+  kann Claude die Daten aus der Datei zurückspielen.
 
 ### 📅 Kalender
 - Variante „eigenes Design“ (nicht eingebettet): nächste 60 Tage, gruppiert nach Tagen,
@@ -149,8 +174,9 @@ früheren Gesprächen besprochen und entschieden wurde.
 - **Push-Nachrichten** (z. B. Putz-Erinnerung) – Lukas will das später.
   Zeitgesteuerte Erinnerungen bräuchten vermutlich Cloud Functions → Firebase-Tarif
   „Blaze“ mit Kreditkarte. Vorher mit Lukas klären.
-- Einkauf → „Als Ausgabe eintragen“.
-- Monatsübersicht der Ausgaben.
+- **Kassenbon-Fotos** bei Ausgaben – bräuchte Firebase Storage (ebenfalls „Blaze“).
+- **Müllabfuhr-Termine** der AWB Köln in den Google-Kalender übernehmen (ohne Code).
+- Prüfen, ob die Google-Anmeldung in der Home-Bildschirm-App auf allen Handys klappt.
 
 ## Testen
 
