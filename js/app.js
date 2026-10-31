@@ -2,17 +2,20 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=16';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=16';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=16';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=16';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=16';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=16';
-import { compressImage } from './images.js?v=16';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=16';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=16';
-import { toPlain, expensesCsv } from './export.js?v=16';
-import { firebaseConfig } from './firebase-config.js?v=16';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=17';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=17';
+import {
+  mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee,
+  guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
+} from './chores.js?v=17';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=17';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=17';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=17';
+import { compressImage } from './images.js?v=17';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=17';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=17';
+import { toPlain, expensesCsv } from './export.js?v=17';
+import { firebaseConfig } from './firebase-config.js?v=17';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -142,9 +145,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=16')).createDemoBackend();
+      backend = (await import('./demo.js?v=17')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=16')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=17')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -736,16 +739,46 @@ function renderPutzplan() {
 
 // ---------- Putzplan-Bereiche bearbeiten ----------
 
+// Bereiche, die noch das Standard-Symbol haben, bekommen automatisch ein passendes
+// (bis man selbst eines auswählt).
 function areaRow(area) {
+  const auto = !area.icon || area.icon === DEFAULT_AREA_ICON;
+  const icon = auto ? guessAreaIcon(area.name) : area.icon;
   return `
-    <div class="area-row" data-id="${esc(area.id)}">
-      <input class="area-icon" value="${esc(area.icon)}" maxlength="4" aria-label="Symbol">
+    <div class="area-row" data-id="${esc(area.id)}" data-auto-icon="${auto}">
+      <button type="button" class="area-icon" data-action="area-icon" data-icon="${esc(icon)}" aria-label="Symbol auswählen">${esc(icon)}</button>
       <div class="area-fields">
         <input class="area-name" value="${esc(area.name)}" maxlength="30" placeholder="Name, z. B. Bad">
         <input class="area-details" value="${esc(area.details)}" maxlength="120" placeholder="Was gehört dazu?">
       </div>
-      <button type="button" class="icon-btn" data-action="remove-area" aria-label="Bereich löschen">🗑</button>
+      <button type="button" class="icon-btn" data-action="remove-area" aria-label="Bereich löschen">✕</button>
     </div>`;
+}
+
+function setAreaIcon(row, icon) {
+  const button = row.querySelector('.area-icon');
+  button.dataset.icon = icon;
+  button.textContent = icon;
+}
+
+// Symbol-Auswahl unter dem angetippten Bereich auf- und zuklappen
+function toggleIconPicker(row) {
+  const open = row.nextElementSibling?.classList.contains('icon-picker');
+  document.querySelectorAll('#areas-list .icon-picker').forEach((p) => p.remove());
+  if (open) return;
+  const current = row.querySelector('.area-icon').dataset.icon;
+  row.insertAdjacentHTML('afterend', `
+    <div class="icon-picker">${AREA_ICON_CHOICES.map((icon) => `
+      <button type="button" class="icon-choice${icon === current ? ' active' : ''}" data-action="area-icon-pick" data-icon="${icon}">${icon}</button>`).join('')}
+    </div>`);
+}
+
+function pickAreaIcon(button) {
+  const picker = button.closest('.icon-picker');
+  const row = picker.previousElementSibling;
+  setAreaIcon(row, button.dataset.icon);
+  row.dataset.autoIcon = 'false';
+  picker.remove();
 }
 
 function openAreasForm() {
@@ -756,7 +789,7 @@ function openAreasForm() {
 
 function addArea() {
   const id = `b${Date.now().toString(36)}`;
-  $('#areas-list').insertAdjacentHTML('beforeend', areaRow({ id, icon: '🧽', name: '', details: '' }));
+  $('#areas-list').insertAdjacentHTML('beforeend', areaRow({ id, icon: DEFAULT_AREA_ICON, name: '', details: '' }));
   $(`#areas-list [data-id="${id}"] .area-name`).focus();
 }
 
@@ -764,7 +797,7 @@ function onSubmitAreas(event) {
   event.preventDefault();
   const areas = [...document.querySelectorAll('#areas-list .area-row')].map((row) => ({
     id: row.dataset.id,
-    icon: row.querySelector('.area-icon').value.trim() || '🧽',
+    icon: row.querySelector('.area-icon').dataset.icon || DEFAULT_AREA_ICON,
     name: row.querySelector('.area-name').value.trim(),
     details: row.querySelector('.area-details').value.trim(),
   }));
@@ -1776,7 +1809,14 @@ function onClick(event) {
     case 'close-form': el.closest('dialog').close(); break;
     case 'edit-areas': openAreasForm(); break;
     case 'add-area': addArea(); break;
-    case 'remove-area': el.closest('.area-row').remove(); break;
+    case 'remove-area': {
+      const row = el.closest('.area-row');
+      if (row.nextElementSibling?.classList.contains('icon-picker')) row.nextElementSibling.remove();
+      row.remove();
+      break;
+    }
+    case 'area-icon': toggleIconPicker(el.closest('.area-row')); break;
+    case 'area-icon-pick': pickAreaIcon(el); break;
     case 'shop-toggle': shopToggle(el.dataset.id); break;
     case 'shop-delete': shopDelete(el.dataset.id); break;
     case 'shop-clear': shopClear(); break;
@@ -1847,6 +1887,12 @@ $('#expense-form').addEventListener('submit', onSubmitExpense);
 $('#expense-form').addEventListener('input', updateSplitHint);
 $('#expense-form').addEventListener('change', updateSplitHint);
 $('#areas-form').addEventListener('submit', onSubmitAreas);
+// Beim Tippen des Namens das passende Symbol vorschlagen (solange keins ausgewählt wurde)
+$('#areas-list').addEventListener('input', (event) => {
+  if (!event.target.classList.contains('area-name')) return;
+  const row = event.target.closest('.area-row');
+  if (row.dataset.autoIcon === 'true') setAreaIcon(row, guessAreaIcon(event.target.value));
+});
 $('#calendar-form').addEventListener('submit', onSubmitCalendar);
 $('#note-form').addEventListener('submit', onSubmitNote);
 $('#n-file').addEventListener('change', (event) => {

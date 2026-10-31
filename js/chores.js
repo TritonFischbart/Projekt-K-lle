@@ -39,3 +39,36 @@ export function defaultAssignee(peopleIds, choreIndex, weekIdx) {
   return peopleIds[(((choreIndex + weekIdx) % n) + n) % n];
 }
 
+
+// Passendes Symbol zum Namen eines Putzbereichs ("Müll" -> 🗑️, "Altglas" -> 🍾).
+// Kommen mehrere Stichwörter vor, zählt das, was zuerst im Namen steht.
+const AREA_ICONS = [
+  ['altglas', '🍾'], ['glas', '🍾'], ['flaschen', '🍾'], ['pfand', '🍾'],
+  ['altpapier', '📦'], ['papier', '📦'], ['karton', '📦'],
+  ['gelber sack', '♻️'], ['gelbe tonne', '♻️'], ['plastik', '♻️'], ['wertstoff', '♻️'], ['recycling', '♻️'],
+  ['müll', '🗑️'], ['abfall', '🗑️'], ['bio', '🗑️'],
+  ['bad', '🛁'], ['dusche', '🚿'], ['toilette', '🚽'], ['klo', '🚽'], ['wc', '🚽'],
+  ['küche', '🍳'], ['herd', '🍳'], ['spülmaschine', '🍽️'], ['geschirr', '🍽️'], ['abwasch', '🍽️'],
+  ['kühlschrank', '❄️'],
+  ['böden', '🧹'], ['boden', '🧹'], ['saugen', '🧹'], ['wischen', '🧹'], ['flur', '🧹'], ['treppe', '🧹'],
+  ['fenster', '🪟'], ['wäsche', '🧺'], ['handtücher', '🧺'],
+  ['pflanzen', '🪴'], ['blumen', '🪴'], ['gießen', '🪴'],
+  ['balkon', '🌿'], ['terrasse', '🌿'], ['einkauf', '🛒'], ['staub', '🪶'],
+];
+
+export const DEFAULT_AREA_ICON = '🧽';
+
+export function guessAreaIcon(name) {
+  const text = String(name ?? '').toLowerCase();
+  let best = null;
+  for (const [word, icon] of AREA_ICONS) {
+    const at = text.indexOf(word);
+    if (at >= 0 && (!best || at < best.at || (at === best.at && word.length > best.length))) {
+      best = { at, length: word.length, icon };
+    }
+  }
+  return best?.icon ?? DEFAULT_AREA_ICON;
+}
+
+// Auswahl zum Antippen im Bearbeiten-Fenster
+export const AREA_ICON_CHOICES = ['🛁', '🚿', '🚽', '🍳', '🍽️', '❄️', '🧹', '🧽', '🧼', '🪣', '🗑️', '♻️', '🍾', '📦', '🪟', '🧺', '🪴', '🌿', '🛒', '🪶', '🛏️', '🚪', '🐾', '✨'];

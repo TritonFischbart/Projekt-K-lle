@@ -171,6 +171,11 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 
 ### 🧹 Putzplan
 - Standard-Bereiche: Bad, Küche, Böden & Müll – **in der App bearbeitbar**.
+- **Symbole der Bereiche**: werden beim Tippen des Namens automatisch passend gewählt
+  (Müll 🗑️, Altglas 🍾, Papier 📦 …, siehe `guessAreaIcon` in `chores.js`) und lassen sich
+  per Antippen aus einer Auswahl ändern. Bereiche mit dem alten Standard-Symbol 🧽 bekommen
+  beim Öffnen von „Bereiche bearbeiten“ automatisch ein passendes. Löschen-Knopf ist ✕
+  (nicht 🗑, sonst Verwechslung mit Müll).
 - Wechsel **jede Woche** (Montag), Rotation der Reihe nach.
 - „Erledigt ✓“, „Ich übernehme“ (spontan tauschen), „Zurückgeben“.
 - Erinnerungen vorerst nur als Hinweis in der App (roter Punkt, Startseite).
