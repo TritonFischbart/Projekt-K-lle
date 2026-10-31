@@ -484,3 +484,9 @@ a.btn.full { width: 100%; }
   font-weight: 600; font-size: 0.95rem;
 }
 .chip-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
+.event-title.muted { color: var(--muted); font-style: italic; font-weight: 400; }
+.card.notice { background: #fff4d6; border-color: #f0dca0; color: #5c4400; }
+.card.notice p { margin: 6px 0 0; font-size: 0.92rem; }
+@media (prefers-color-scheme: dark) {
+  .card.notice { background: #3a3218; border-color: #5a4c20; color: #f3e3b0; }
+}

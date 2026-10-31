@@ -128,6 +128,7 @@ geht das Anlegen nicht).
 | „Website-Adresse ist in Firebase noch nicht freigegeben“ | Schritt 3.4 (Autorisierte Domains) prüfen. |
 | „Kein Zugang 🔒“ | Die Adresse fehlt in den Regeln (Schritt 5) oder ist falsch geschrieben. |
 | Kalender: „Kalender nicht gefunden“ | Kalender-ID prüfen und ob Schritt D3 (öffentlich) erledigt ist. |
+| Kalender: „Titel nicht sichtbar“ | In Google Kalender bei „Öffentlich freigeben“ **„Alle Termindetails anzeigen“** wählen (D3). |
 | Kalender: „Google lehnt den Zugriff ab“ | API-Schlüssel prüfen und ob die Calendar API aktiviert ist (D5). |
 | Jemand hat sich aus Versehen den falschen Namen ausgesucht | In Firebase → Firestore Database → Sammlung `members` → den falschen Eintrag löschen. Dann neu anmelden. |
 

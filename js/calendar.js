@@ -29,7 +29,10 @@ export function normalizeEvent(item) {
     : new Date(item.end?.dateTime ?? item.start?.dateTime);
   return {
     id: item.id,
-    title: item.summary || '(ohne Titel)',
+    // Ohne Titel: entweder wirklich leer oder Google gibt ihn nicht heraus
+    // (Kalender nur als "frei/belegt" freigegeben oder Termin auf "privat").
+    title: item.summary || 'Titel nicht sichtbar',
+    hiddenTitle: !item.summary,
     location: item.location || '',
     allDay,
     start,

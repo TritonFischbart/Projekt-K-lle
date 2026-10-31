@@ -2,12 +2,12 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=7';
-import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=7';
-import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=7';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=7';
-import { SHOP_CATEGORIES, guessCategory } from './shopcats.js?v=7';
-import { firebaseConfig } from './firebase-config.js?v=7';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=8';
+import { parseEuro, formatEuro, splitAmount, computeBalances, suggestTransfers } from './money.js?v=8';
+import { mondayOf, addDays, isoWeek, weekKey, weekIndex, defaultAssignee } from './chores.js?v=8';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=8';
+import { SHOP_CATEGORIES, guessCategory } from './shopcats.js?v=8';
+import { firebaseConfig } from './firebase-config.js?v=8';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -108,9 +108,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=7')).createDemoBackend();
+      backend = (await import('./demo.js?v=8')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=7')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=8')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -913,7 +913,7 @@ function renderKalender() {
             <li><a class="event" href="${esc(e.link)}" target="_blank" rel="noopener">
               <span class="event-time">${eventTime(e, g.day)}</span>
               <span class="event-main">
-                <span class="event-title">${esc(e.title)}</span>
+                <span class="event-title${e.hiddenTitle ? ' muted' : ''}">${esc(e.title)}</span>
                 ${e.location ? `<span class="event-sub">📍 ${esc(e.location)}</span>` : ''}
               </span>
             </a></li>`).join('')}</ul>
@@ -921,7 +921,17 @@ function renderKalender() {
       : '<p class="empty">In den nächsten 60 Tagen steht nichts an.</p>';
   }
 
+  const allHidden = cal.events?.length > 0 && cal.events.every((e) => e.hiddenTitle);
+  const titleHint = allHidden ? `
+    <section class="card notice">
+      <strong>Die Titel der Termine sind nicht sichtbar.</strong>
+      <p>Google gibt gerade nur „frei/belegt“ heraus. In Google Kalender bei „WG Kölle“ →
+      „Zugriffsberechtigungen für Termine“ neben „Öffentlich freigeben“
+      <strong>„Alle Termindetails anzeigen“</strong> auswählen. Danach hier auf „Aktualisieren“ tippen.</p>
+    </section>` : '';
+
   el.innerHTML = `
+    ${titleHint}
     <section class="card">
       <div class="card-head">
         <h2>Nächste Termine</h2>
