@@ -26,7 +26,9 @@ export function expensesCsv(expenses, { personName, categoryName }) {
       categoryName(e.category),
       (e.amountCents / 100).toFixed(2).replace('.', ','),
       personName(e.paidBy),
-      (e.splitAmong ?? []).map(personName).join(', '),
+      e.shares
+        ? Object.entries(e.shares).map(([id, cents]) => `${personName(id)} ${(cents / 100).toFixed(2).replace('.', ',')}`).join(', ')
+        : (e.splitAmong ?? []).map(personName).join(', '),
       e.settlementId ? 'ja' : 'nein',
     ]);
   // ﻿ am Anfang, damit Excel Umlaute richtig anzeigt.

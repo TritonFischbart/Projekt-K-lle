@@ -109,6 +109,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `notes` | Schwarzes Brett: `title, text, createdBy, updatedBy` (ID wird in der App erzeugt) |
 | `noteImages` | Bilder zu Notizen: `noteId, data` (JPEG als Data-URL, max. ~0,9 MB), `width, height` |
 | `settings/backup` | Wann zuletzt gesichert wurde (`at`, `by`) |
+| `settings/einkauf` | Eigene Reihenfolge der Einkaufs-Kategorien (`order[]`) |
 | `absences` | Abwesenheiten: `person, from, to ("2026-11-10"), note` |
 | `polls` | Abstimmungen: `question, options[], votes {person: index}, closed, closedAt` (Stimme per `votes.{person}` speichern) |
 
@@ -140,7 +141,10 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - Kann als App auf den Home-Bildschirm gelegt werden (Manifest + Icons).
 
 ### 💶 Ausgaben
-- Beträge in **Cent**. Aufteilung **immer gleichmäßig** auf die ausgewählten Personen.
+- Beträge in **Cent**. Aufteilung normalerweise **gleichmäßig** auf die ausgewählten Personen.
+- **Ungleich aufteilen** (Häkchen im Formular): Beträge pro Person eingeben, müssen genau
+  die Summe ergeben (Feld `shares {person: cent}`; `expenseShares` in `money.js` rechnet,
+  ohne passende `shares` gleichmäßig). Nicht bei Daueraufträgen. Liste zeigt „(ungleich)“.
 - Kategorien: Lebensmittel, Haushalt, Internet & Strom, Freizeit, Sonstiges.
 - Einträge bearbeiten und löschen erlaubt.
 - Ausgleichs-Vorschlag mit möglichst wenigen Überweisungen.
@@ -168,6 +172,8 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   Automatische Zuordnung per Stichwort (bei zusammengesetzten Wörtern zählt das
   Ende: „Orangensaft“ → Getränke). Kategorie lässt sich pro Eintrag ändern; die
   App merkt sich das in `favorites`.
+- **Eigene Reihenfolge** der Kategorien („↕️ Reihenfolge“ mit ▲▼, passend zum
+  Stamm-Supermarkt), gespeichert in `settings/einkauf` (`order[]`), gilt für alle.
 
 ### 🧹 Putzplan
 - Standard-Bereiche: Bad, Küche, Böden & Müll – **in der App bearbeitbar**.
@@ -192,10 +198,12 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - Auf der Startseite: Frage + 2–6 Antworten (oder „Ja / Nein“). Antippen = abstimmen,
   nochmal tippen = Stimme zurücknehmen. „Beenden“ zeigt das Ergebnis (bleibt 7 Tage sichtbar).
   Roter Punkt an „Start“, solange man selbst noch nicht abgestimmt hat.
+- **Keine Frist / kein automatisches Ende** – ausdrücklich nicht gewünscht.
 
 ### 📌 Infos
 - **Schwarzes Brett**: Notizen mit Vorlagen (WLAN, Vermieter, Zählerstände, Schlüssel,
   Notfall). „Text kopieren“ z. B. fürs WLAN-Passwort.
+- **Anheften** („Anheften“/„Lösen“, Feld `pinned`): angeheftete Notizen stehen oben, rot markiert.
 - **Bilder** an Notizen (z. B. Grundriss aus dem Exposé): werden auf dem Handy auf
   max. 1600 px / < 0,9 MB verkleinert und **in Firestore** gespeichert (kostenlos, kein
   Firebase Storage/„Blaze“ nötig). Vorschaubilder, Tippen = groß, nochmal = Zoom.
@@ -229,8 +237,10 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - **Müllabfuhr-Termine** der AWB Köln in den Google-Kalender übernehmen (ohne Code).
 - Prüfen, ob die Google-Anmeldung in der Home-Bildschirm-App auf allen Handys klappt
   (Teil des Tests mit Jana und Jul, #10).
-- **Ideen-Sammlung** (#15, erst nach dem Test entscheiden): mehrere Einkaufslisten,
-  „Ich geh jetzt einkaufen“, Schnell-Notizen auf der Startseite, Bewertung für den WG-Abend.
+- **Ideen-Sammlung** (#15, erst nach dem Test entscheiden): „Ich geh jetzt einkaufen“,
+  Schnell-Notizen auf der Startseite, Bewertung für den WG-Abend.
+- **Ausdrücklich nicht gewünscht** (nicht bauen): Erinnerung an offene Schulden,
+  mehrere Einkaufslisten, Frist bei Abstimmungen.
 
 ## Testen
 
