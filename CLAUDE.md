@@ -295,8 +295,10 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   braucht eine Google-Anmeldung mit Kalender-Berechtigung (OAuth, Zustimmungsbildschirm
   in der Google Cloud Console, im Testmodus Nutzer eintragen) – vorher mit Lukas klären.
 
-- **Push-Nachrichten** (#12): gebaut (Nov. 2026). Offen, bis Lukas Teil E der Anleitung
-  erledigt hat (Blaze, VAPID-Schlüssel, Secret) und es auf den Handys getestet ist.
+- **Push-Nachrichten** (#12): gebaut und am 1. Nov. 2026 erfolgreich bei Firebase bereitgestellt.
+  Offen, bis es auf den Handys getestet ist. Das Dienstkonto `github-deploy` braucht die Rollen
+  Editor, Project IAM Admin und Cloud Functions Admin; die Cloud Billing API muss an sein.
+  Beim allerersten Bereitstellen kam „Eventarc Service Agent“ – das löst sich nach ein paar Minuten von selbst.
 - **Kassenbon-Fotos** bei Ausgaben – bräuchte Firebase Storage (ebenfalls „Blaze“).
 - **WG-Radio** (#24): Radio in der App, gespeist über einen Anbieter. Möglichkeiten:
   Kölner Sender per Stream einbinden, eigener kostenloser WG-Sender (z. B. laut.fm) oder
