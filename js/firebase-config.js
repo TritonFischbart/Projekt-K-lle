@@ -11,5 +11,5 @@ export const firebaseConfig = {
   appId: '1:64746922011:web:7cccdf1a9bf9566ea6d8be',
   // Öffentlicher Schlüssel für Push-Nachrichten (Firebase → Projekteinstellungen →
   // Cloud Messaging → Web-Push-Zertifikate). Leer = Benachrichtigungen noch nicht eingerichtet.
-  vapidKey: '',
+  vapidKey: 'BFp82DjFjqtCqDs9NZC1tmbHZPiDuobr3jfbrTtk9QNR4T9sOiG-QQxwiIbnhrofRxyepgri_qvK-ytPlxmUTbs',
 };

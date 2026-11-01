@@ -2,24 +2,24 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES, PUSH_TYPES } from './config.js?v=25';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=25';
+import { PEOPLE, CATEGORIES, CHORES, PUSH_TYPES } from './config.js?v=26';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=26';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=25';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=25';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=25';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=25';
-import { compressImage } from './images.js?v=25';
-import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=25';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=25';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=25';
-import { toPlain, expensesCsv } from './export.js?v=25';
-import { firebaseConfig } from './firebase-config.js?v=25';
+} from './chores.js?v=26';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=26';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=26';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=26';
+import { compressImage } from './images.js?v=26';
+import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=26';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=26';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=26';
+import { toPlain, expensesCsv } from './export.js?v=26';
+import { firebaseConfig } from './firebase-config.js?v=26';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
-// Versionsnummer aus der Adresse dieser Datei (app.js?v=25) – zeigt, ob das Handy die neueste Version hat
+// Versionsnummer aus der Adresse dieser Datei (app.js?v=26) – zeigt, ob das Handy die neueste Version hat
 const APP_VERSION = new URL(import.meta.url).searchParams.get('v') ?? '?';
 const $ = (selector) => document.querySelector(selector);
 
@@ -153,9 +153,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=25')).createDemoBackend();
+      backend = (await import('./demo.js?v=26')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=25')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=26')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
