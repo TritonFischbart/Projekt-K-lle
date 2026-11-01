@@ -134,6 +134,10 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - Lukas wollte **keine Putz-Statistik** („wer wie oft geputzt hat“) – klingt blöd. Nicht wieder einbauen.
 - Personen-Reihenfolge: **Jana, Jul, Lukas**. Farben: Jana hellbraun `#a97b50`,
   Jul blau `#2b6cb0`, Lukas grün `#2f7d4f`.
+- **Wischen** nach links/rechts wechselt zwischen den Bereichen in Leisten-Reihenfolge
+  (Kalender zählt als „Start“). Nur deutliches, schnelles, waagerechtes Wischen; nicht am
+  Bildschirmrand (iPhone-„Zurück“), nicht in Eingabefeldern, nicht bei offenem Fenster.
+  Elemente mit Klasse `no-swipe` sind ausgenommen.
 - Untere Leiste: **Start · Ausgaben · Einkauf · Putzplan · Infos**. Der **Kalender**
   hat keinen eigenen Knopf mehr – er hängt an der Startseite („Ganzer Kalender ›“,
   „‹ Zur Übersicht“), damit die Leiste auf dem Handy nicht zu voll wird.
@@ -229,7 +233,7 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 
 > Die Aufgaben stehen auch als **GitHub-Issues** im Projekt (Reiter „Issues“):
 > #10 Test mit Jana und Jul · #11 Termine direkt eintragen · #12 Push-Nachrichten ·
-> #13 Kassenbon-Fotos · #14 Müllabfuhr-Termine · #15 Ideen-Sammlung.
+> #13 Kassenbon-Fotos · #14 Müllabfuhr-Termine · #15 Ideen-Sammlung · #24 WG-Radio.
 > Wenn etwas davon erledigt ist, das Issue schließen und hier austragen.
 
 - **Termine direkt in der App eintragen** (statt über Google Kalender). Von Lukas
@@ -241,6 +245,9 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   Zeitgesteuerte Erinnerungen bräuchten vermutlich Cloud Functions → Firebase-Tarif
   „Blaze“ mit Kreditkarte. Vorher mit Lukas klären.
 - **Kassenbon-Fotos** bei Ausgaben – bräuchte Firebase Storage (ebenfalls „Blaze“).
+- **WG-Radio** (#24): Radio in der App, gespeist über einen Anbieter. Möglichkeiten:
+  Kölner Sender per Stream einbinden, eigener kostenloser WG-Sender (z. B. laut.fm) oder
+  gemeinsame Spotify-Playlist einbetten. Vorher mit Lukas klären, welche Variante.
 - **Müllabfuhr-Termine** der AWB Köln in den Google-Kalender übernehmen (ohne Code).
 - Prüfen, ob die Google-Anmeldung in der Home-Bildschirm-App auf allen Handys klappt
   (Teil des Tests mit Jana und Jul, #10).
