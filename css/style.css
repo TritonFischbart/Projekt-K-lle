@@ -479,6 +479,19 @@ main {
 .event-main { flex: 1; min-width: 0; display: grid; }
 .event-title { font-weight: 600; overflow-wrap: anywhere; }
 .event-sub { color: var(--muted); font-size: 0.85rem; }
+button.event { width: 100%; text-align: left; border: 0; border-left: 4px solid var(--brand); }
+.event-arrow { flex: none; align-self: center; color: var(--muted); font-size: 1.3rem; line-height: 1; }
+.event-detail { display: grid; gap: 12px; }
+.event-detail-title { margin: 0; font-size: 1.3rem; overflow-wrap: anywhere; }
+.event-detail-title.muted { color: var(--muted); font-style: italic; font-weight: 400; }
+.event-detail-row { margin: 0; display: flex; gap: 10px; align-items: baseline; }
+.event-detail-row a { color: var(--brand); overflow-wrap: anywhere; }
+.event-detail-desc {
+  white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45;
+  padding: 12px 14px; border-radius: 12px; background: var(--bg);
+  max-height: 45vh; overflow-y: auto;
+}
+.event-detail-desc a { color: var(--brand); }
 .center-pad { display: grid; place-items: center; padding: 24px; }
 .soon .btn { justify-self: center; margin-top: 8px; }
 a.btn.full { width: 100%; }
@@ -543,7 +556,7 @@ a.btn.full { width: 100%; }
 .start-day + .start-day { margin-top: 10px; }
 .start-day-title { display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
 .start-day-title.today { color: var(--brand); }
-.start-event { display: flex; gap: 10px; padding: 3px 0; font-weight: 600; }
+.start-event { display: flex; gap: 10px; padding: 3px 0; font-weight: 600; width: 100%; text-align: left; border: 0; background: none; }
 .start-event span { flex: none; width: 76px; color: var(--muted); font-weight: 500; font-size: 0.9rem; }
 .start-chore { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; }
 .start-chore-name { font-weight: 700; font-size: 1.05rem; }

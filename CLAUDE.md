@@ -282,6 +282,11 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   Monats-Überschriften ab dem nächsten Monat. Bis zu 4 × 250 Termine (mehrere Abrufe).
   „＋ Termin eintragen“ öffnet Google Kalender, Aktualisierung alle 5 Minuten.
   Startseite zeigt nur die nächsten 3 Tage mit Terminen.
+- **Termin antippen** (Kalender und Startseite) öffnet ein Fenster in der App mit Zeit, Ort
+  (Link zu Google Maps), Beschreibung (HTML von Google → Text, Links antippbar) und
+  „In Google Kalender öffnen“.
+- **Widgets** für den Home-Bildschirm gehen mit einer Web-App nicht (bräuchte eine echte
+  iPhone-/Android-App). Lukas gefragt am 1. Nov. 2026 – Alternative: Widget der Google-Kalender-App.
 
 ## Merkliste / To-do für später (noch nicht gebaut)
 

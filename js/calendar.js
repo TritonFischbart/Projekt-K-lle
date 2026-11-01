@@ -22,6 +22,24 @@ export function eventsUrl(calendarId, apiKey, from, to, pageToken = '') {
   return `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`;
 }
 
+// Google liefert die Beschreibung teils als HTML (<br>, <a>, <b> …) -> einfacher Text.
+export function descriptionText(html = '') {
+  return String(html)
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h\d)>/gi, '\n')
+    .replace(/<\/?(ul|ol)[^>]*>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<a\s[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (m, href, text) => (text.includes(href) || href.includes(text) ? href : `${text} (${href})`))
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (m, n) => String.fromCodePoint(Number(n)))
+    .replace(/&amp;/g, '&')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export function normalizeEvent(item) {
   const allDay = Boolean(item.start?.date);
   const start = allDay ? localDate(item.start.date) : new Date(item.start?.dateTime);
@@ -35,6 +53,7 @@ export function normalizeEvent(item) {
     title: item.summary || 'Titel nicht sichtbar',
     hiddenTitle: !item.summary,
     location: item.location || '',
+    description: descriptionText(item.description),
     allDay,
     start,
     end,
