@@ -646,3 +646,13 @@ a.btn.full { width: 100%; }
 .note .card-head { gap: 10px; align-items: flex-start; }
 
 .month-head { margin: 22px 0 10px; padding-bottom: 4px; border-bottom: 2px solid var(--brand); color: var(--brand); font-size: 1rem; }
+
+/* ---------- Wischen zwischen den Bereichen ---------- */
+@keyframes slide-from-right { from { transform: translateX(40px); opacity: 0; } }
+@keyframes slide-from-left { from { transform: translateX(-40px); opacity: 0; } }
+.tab.slide-from-right { animation: slide-from-right 0.22s ease-out; }
+.tab.slide-from-left { animation: slide-from-left 0.22s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .tab.slide-from-right, .tab.slide-from-left { animation: none; }
+}
+main { overflow-x: clip; }

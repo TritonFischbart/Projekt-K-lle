@@ -2,20 +2,20 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=20';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=20';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=21';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=21';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=20';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=20';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=20';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=20';
-import { compressImage } from './images.js?v=20';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=20';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=20';
-import { toPlain, expensesCsv } from './export.js?v=20';
-import { firebaseConfig } from './firebase-config.js?v=20';
+} from './chores.js?v=21';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=21';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=21';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=21';
+import { compressImage } from './images.js?v=21';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=21';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=21';
+import { toPlain, expensesCsv } from './export.js?v=21';
+import { firebaseConfig } from './firebase-config.js?v=21';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -147,9 +147,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=20')).createDemoBackend();
+      backend = (await import('./demo.js?v=21')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=20')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=21')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -280,9 +280,16 @@ function renderHeader() {
   button.setAttribute('aria-label', `Angemeldet als ${personName(state.me)} – abmelden`);
 }
 
-function switchTab(tab) {
+// direction: 1 = von rechts hereinschieben (nach links gewischt), -1 = von links
+function switchTab(tab, direction = 0) {
   state.tab = tab;
   document.querySelectorAll('.tab').forEach((section) => { section.hidden = section.id !== `tab-${tab}`; });
+  if (direction) {
+    const section = $(`#tab-${tab}`);
+    section.classList.remove('slide-from-right', 'slide-from-left');
+    void section.offsetWidth; // Animation neu starten
+    section.classList.add(direction > 0 ? 'slide-from-right' : 'slide-from-left');
+  }
   const barTab = tab === 'kalender' ? 'start' : tab;
   document.querySelectorAll('.tabbar button').forEach((b) => {
     if (b.dataset.tab === barTab) b.setAttribute('aria-current', 'page');
@@ -307,6 +314,36 @@ function renderAll() {
   tabButton.classList.toggle('has-badge', open > 0);
   // Punkt an "Start", solange eine Abstimmung auf deine Stimme wartet
   document.querySelector('.tabbar [data-tab=start]').classList.toggle('has-badge', openPolls().some((p) => p.votes?.[state.me] == null));
+}
+
+// ---------- Wischen zwischen den Bereichen ----------
+
+const TAB_ORDER = ['start', 'ausgaben', 'einkauf', 'putzplan', 'infos'];
+let swipeStart = null;
+
+function onTouchStart(event) {
+  const t = event.touches[0];
+  swipeStart = null;
+  if (event.touches.length !== 1) return;
+  // Nicht am Bildschirmrand (dort ist die "Zurück"-Geste des Handys) und nicht in Eingabefeldern
+  if (t.clientX < 24 || t.clientX > window.innerWidth - 24) return;
+  if (event.target.closest('input, textarea, select, .no-swipe')) return;
+  swipeStart = { x: t.clientX, y: t.clientY, time: Date.now() };
+}
+
+function onTouchEnd(event) {
+  if (!swipeStart) return;
+  const t = event.changedTouches[0];
+  const dx = t.clientX - swipeStart.x;
+  const dy = t.clientY - swipeStart.y;
+  const quick = Date.now() - swipeStart.time < 700;
+  swipeStart = null;
+  // Nur deutliches, waagerechtes Wischen zählt
+  if (!quick || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+  if (document.querySelector('dialog[open]')) return;
+  const current = state.tab === 'kalender' ? 'start' : state.tab;
+  const next = TAB_ORDER[TAB_ORDER.indexOf(current) + (dx < 0 ? 1 : -1)];
+  if (next) switchTab(next, dx < 0 ? 1 : -1);
 }
 
 // ---------- Ausgaben anzeigen ----------
@@ -2034,6 +2071,8 @@ function onClick(event) {
 }
 
 document.addEventListener('click', onClick);
+$('#screen-app main').addEventListener('touchstart', onTouchStart, { passive: true });
+$('#screen-app main').addEventListener('touchend', onTouchEnd, { passive: true });
 $('#expense-form').addEventListener('submit', onSubmitExpense);
 $('#expense-form').addEventListener('input', (event) => {
   if (event.target.dataset.share) state.shareValues[event.target.dataset.share] = event.target.value;
