@@ -120,6 +120,52 @@ geht das Anlegen nicht).
 
 ---
 
+## Teil E – Push-Nachrichten (einmalig, ca. 15 Minuten)
+
+Am besten am Computer oder iPad im Browser. Bei Fragen: Screenshot an Claude schicken.
+
+### E1. Firebase auf den Tarif „Blaze“ umstellen
+1. Öffne **https://console.firebase.google.com/project/projekt-koelle/usage/details**
+2. Bei „Tarif“ / „Plan“ auf **„Upgrade“ / „Tarif ändern“** → **Blaze** wählen.
+3. Ein **Rechnungskonto** mit Kreditkarte anlegen und bestätigen.
+   Für eine WG fallen praktisch **0 €** an (riesiges Gratis-Kontingent).
+
+### E2. Budget-Warnung einrichten (Sicherheit)
+1. Öffne **https://console.cloud.google.com/billing/budgets**
+2. **„Budget erstellen“ / „Create budget“** → Name `Kölle`, Projekt `projekt-koelle`.
+3. Betrag: **1 €** → Warnungen bei 50 %, 90 %, 100 % (E-Mail an dich) → **Fertig**.
+
+### E3. Schlüssel für Nachrichten erzeugen
+1. Öffne **https://console.firebase.google.com/project/projekt-koelle/settings/cloudmessaging**
+2. Ganz unten bei **„Web-Push-Zertifikate“ / „Web Push certificates“** →
+   **„Schlüsselpaar generieren“ / „Generate key pair“**.
+3. Den langen Schlüssel kopieren und **Claude schicken** (der ist nicht geheim).
+
+### E4. Zugangsschlüssel für GitHub erstellen (geheim!)
+Damit GitHub den Versand-Dienst bei Firebase automatisch einrichten darf.
+1. Öffne **https://console.cloud.google.com/iam-admin/serviceaccounts?project=projekt-koelle**
+2. **„+ Dienstkonto erstellen“ / „+ Create service account“** → Name: `github-deploy` → **Erstellen und fortfahren**.
+3. Rolle: **„Bearbeiter“ / „Editor“** auswählen → **Weiter** → **Fertig**.
+4. Das neue Konto anklicken → Reiter **„Schlüssel“ / „Keys“** →
+   **„Schlüssel hinzufügen“ → „Neuen Schlüssel erstellen“** → **JSON** → **Erstellen**.
+   Eine Datei wird heruntergeladen.
+
+### E5. Zugangsschlüssel bei GitHub hinterlegen
+1. Öffne **https://github.com/TritonFischbart/Projekt-Koelle/settings/secrets/actions**
+2. **„New repository secret“** → Name: `FIREBASE_SERVICE_ACCOUNT`
+3. Bei „Secret“ den **kompletten Inhalt** der heruntergeladenen Datei einfügen → **„Add secret“**.
+4. Die heruntergeladene Datei danach **löschen**. **Niemandem schicken – auch nicht Claude.**
+
+### E6. Claude Bescheid geben
+Claude startet dann die Einrichtung des Versand-Dienstes und trägt den Schlüssel aus E3 ein.
+
+### E7. Auf jedem Handy einschalten
+In der App oben rechts **⚙️ → Benachrichtigungen → „Auf diesem Handy einschalten“** →
+Erlauben. Auf dem iPhone/iPad geht das nur in der **App vom Home-Bildschirm**.
+Mit **„Test-Nachricht senden“** prüfen, ob es klappt.
+
+---
+
 ## Wenn etwas nicht klappt
 
 | Meldung | Lösung |

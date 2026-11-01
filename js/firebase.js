@@ -25,6 +25,13 @@ import {
   serverTimestamp,
   writeBatch,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {
+  getMessaging,
+  getToken,
+  deleteToken,
+  isSupported as isMessagingSupported,
+  onMessage,
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js';
 
 export function createFirebaseBackend(config) {
   const app = initializeApp(config);
@@ -99,5 +106,29 @@ export function createFirebaseBackend(config) {
     },
 
     now: () => serverTimestamp(),
+
+    // ---------- Push-Nachrichten ----------
+    pushReady: Boolean(config.vapidKey),
+
+    async pushSupported() {
+      return 'Notification' in window && 'serviceWorker' in navigator && (await isMessagingSupported());
+    },
+
+    // Fragt nach Erlaubnis und liefert die "Adresse" dieses Handys für Nachrichten.
+    async enablePush() {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') throw Object.assign(new Error('Nicht erlaubt'), { code: 'denied' });
+      const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+      return getToken(getMessaging(app), { vapidKey: config.vapidKey, serviceWorkerRegistration: registration });
+    },
+
+    async disablePush() {
+      await deleteToken(getMessaging(app)).catch(() => {});
+    },
+
+    // Nachricht kommt an, während die App offen ist
+    async onPushMessage(callback) {
+      if (await this.pushSupported()) onMessage(getMessaging(app), (payload) => callback(payload.notification ?? {}));
+    },
   };
 }

@@ -8,11 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kölle">
   <title>Projekt Kölle</title>
-  <link rel="icon" href="icons/icon.svg?v=24" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=24">
-  <link rel="manifest" href="manifest.webmanifest?v=24">
-  <link rel="stylesheet" href="css/style.css?v=24">
-  <script type="module" src="js/app.js?v=24"></script>
+  <link rel="icon" href="icons/icon.svg?v=25" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=25">
+  <link rel="manifest" href="manifest.webmanifest?v=25">
+  <link rel="stylesheet" href="css/style.css?v=25">
+  <script type="module" src="js/app.js?v=25"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -23,7 +23,7 @@
   <!-- Firebase ist noch nicht eingerichtet -->
   <div id="screen-setup" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=24" alt="" class="logo">
+      <img src="icons/icon.svg?v=25" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
       <a class="btn primary" href="?demo">Demo ansehen</a>
@@ -33,7 +33,7 @@
   <!-- Anmelden -->
   <div id="screen-login" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=24" alt="" class="logo">
+      <img src="icons/icon.svg?v=25" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p>Die WG-Seite von Jana, Jul und Lukas.</p>
       <button class="btn primary" data-action="login">Mit Google anmelden</button>
@@ -62,8 +62,11 @@
   <!-- Die eigentliche App -->
   <div id="screen-app" class="screen" hidden>
     <header class="topbar">
-      <div class="brand"><img src="icons/icon.svg?v=24" alt=""> Projekt Kölle</div>
-      <button class="me-button" id="me-button" data-action="logout"></button>
+      <div class="brand"><img src="icons/icon.svg?v=25" alt=""> Projekt Kölle</div>
+      <span class="topbar-actions">
+        <button class="icon-btn settings-btn" data-action="tab" data-tab="settings" aria-label="Einstellungen">⚙️</button>
+        <button class="me-button" id="me-button" data-action="tab" data-tab="settings"></button>
+      </span>
     </header>
     <div id="demo-banner" class="demo-banner" hidden>Demo-Modus – nichts wird gespeichert</div>
     <div id="offline-banner" class="demo-banner offline" hidden>📴 Du bist offline – deine Änderungen werden gespeichert, sobald du wieder Netz hast.</div>
@@ -85,6 +88,8 @@
       <section id="tab-kalender" class="tab" hidden></section>
 
       <section id="tab-infos" class="tab" hidden></section>
+
+      <section id="tab-settings" class="tab" hidden></section>
 
       <section id="tab-putzplan" class="tab" hidden></section>
     </main>

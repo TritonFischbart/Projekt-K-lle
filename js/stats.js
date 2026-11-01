@@ -1,6 +1,6 @@
 // Auswertungen: Monatsübersicht der Ausgaben.
 
-import { monthKey, addMonths } from './recurring.js?v=24';
+import { monthKey, addMonths } from './recurring.js?v=25';
 
 export function monthStats(expenses, month) {
   const inMonth = expenses.filter((e) => (e.date ?? '').startsWith(month));

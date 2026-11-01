@@ -678,3 +678,28 @@ main { overflow-x: clip; }
 .invite-title-row .invite-emoji { width: 56px; flex: none; text-align: center; font-size: 1.3rem; padding: 6px; }
 #i-time { margin-top: 8px; }
 #i-templates .chip-btn { font-size: 0.88rem; }
+
+/* ---------- Einstellungen ---------- */
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.settings-btn { background: rgba(255, 255, 255, 0.18); color: #fff; font-size: 1.15rem; }
+.settings-title { margin: 6px 2px 0; font-size: 1.5rem; }
+.push-status { margin: 0 0 8px; font-weight: 700; }
+.push-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.push-types { list-style: none; margin: 0; padding: 0; }
+.push-types li + li { border-top: 1px solid var(--border); }
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 0; cursor: pointer; }
+.switch-text { display: grid; }
+.switch-text > span { font-weight: 600; }
+.switch-text small { color: var(--muted); font-size: 0.82rem; }
+.switch {
+  appearance: none; -webkit-appearance: none; flex: none;
+  width: 50px; height: 30px; border-radius: 99px; background: var(--border);
+  position: relative; cursor: pointer; transition: background 0.2s;
+}
+.switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.2s;
+}
+.switch:checked { background: var(--brand); }
+.switch:checked::after { transform: translateX(20px); }
+.logout-btn { margin-top: 12px; }

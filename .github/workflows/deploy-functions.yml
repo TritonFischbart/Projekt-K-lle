@@ -1,0 +1,64 @@
+# Stellt den Push-Nachrichten-Dienst (Ordner functions/) bei Firebase bereit.
+# Läuft automatisch, wenn sich der Dienst ändert, oder per Hand über "Run workflow".
+# Braucht das GitHub-Secret FIREBASE_SERVICE_ACCOUNT (siehe ANLEITUNG.md, Teil E).
+name: Push-Dienst bereitstellen
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'js/chores.js'
+      - 'js/absences.js'
+      - 'js/money.js'
+      - 'js/calendar.js'
+      - 'js/config.js'
+      - 'firebase.json'
+      - '.github/workflows/deploy-functions.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ist der Zugangsschlüssel hinterlegt?
+        id: check
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Noch kein Zugangsschlüssel (FIREBASE_SERVICE_ACCOUNT) hinterlegt – Bereitstellung übersprungen."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.ready == 'true'
+        with:
+          node-version: 20
+
+      - name: Gemeinsame Dateien aus der App übernehmen
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          mkdir -p functions/shared
+          cp js/chores.js js/absences.js js/money.js js/calendar.js js/config.js functions/shared/
+
+      - name: Abhängigkeiten installieren und Logik testen
+        if: steps.check.outputs.ready == 'true'
+        working-directory: functions
+        run: |
+          npm install --no-audit --no-fund
+          node test-logic.mjs
+
+      - name: Bei Firebase bereitstellen
+        if: steps.check.outputs.ready == 'true'
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx --yes firebase-tools@13 deploy --only functions --project projekt-koelle --force --non-interactive
+          rm -f "$RUNNER_TEMP/sa.json"
