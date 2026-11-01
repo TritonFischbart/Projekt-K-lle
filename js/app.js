@@ -2,23 +2,23 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=22';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=22';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=23';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=23';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=22';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=22';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=22';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=22';
-import { compressImage } from './images.js?v=22';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=22';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=22';
-import { toPlain, expensesCsv } from './export.js?v=22';
-import { firebaseConfig } from './firebase-config.js?v=22';
+} from './chores.js?v=23';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=23';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=23';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=23';
+import { compressImage } from './images.js?v=23';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=23';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=23';
+import { toPlain, expensesCsv } from './export.js?v=23';
+import { firebaseConfig } from './firebase-config.js?v=23';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
-// Versionsnummer aus der Adresse dieser Datei (app.js?v=22) – zeigt, ob das Handy die neueste Version hat
+// Versionsnummer aus der Adresse dieser Datei (app.js?v=23) – zeigt, ob das Handy die neueste Version hat
 const APP_VERSION = new URL(import.meta.url).searchParams.get('v') ?? '?';
 const $ = (selector) => document.querySelector(selector);
 
@@ -149,9 +149,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=22')).createDemoBackend();
+      backend = (await import('./demo.js?v=23')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=22')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=23')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -323,12 +323,17 @@ function renderAll() {
 const TAB_ORDER = ['start', 'ausgaben', 'einkauf', 'putzplan', 'infos'];
 let swipe = null;
 
+// Als App vom Home-Bildschirm gestartet? Dann gibt es keine "Zurück"-Geste am Rand,
+// und man darf auch direkt vom Rand wischen. Im Browser bleibt ein schmaler Streifen frei.
+const IS_HOME_SCREEN_APP = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const EDGE = IS_HOME_SCREEN_APP ? 0 : 16;
+
 function onTouchStart(event) {
   swipe = null;
   if (event.touches.length !== 1 || $('#screen-app').hidden) return;
   const t = event.touches[0];
   // Nicht am Bildschirmrand (dort ist die "Zurück"-Geste des Handys) und nicht in Eingabefeldern
-  if (t.clientX < 20 || t.clientX > window.innerWidth - 20) return;
+  if (t.clientX < EDGE || t.clientX > window.innerWidth - EDGE) return;
   if (event.target.closest('input, textarea, select, dialog, .tabbar, .no-swipe')) return;
   swipe = { x: t.clientX, y: t.clientY, lastX: t.clientX, lastY: t.clientY, time: Date.now() };
   // Wird die Seite während des Wischens neu gezeichnet (neue Daten kommen an), hängt das
