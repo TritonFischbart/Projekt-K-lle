@@ -59,6 +59,9 @@ jobs:
           SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           echo "$SA" > "$RUNNER_TEMP/sa.json"
+          trap 'rm -f "$RUNNER_TEMP/sa.json"' EXIT
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
-          npx --yes firebase-tools@14 deploy --only functions --project projekt-koelle --force --non-interactive
-          rm -f "$RUNNER_TEMP/sa.json"
+          deploy() { npx --yes firebase-tools@14 deploy --only functions --project projekt-koelle --force --non-interactive; }
+          # Google meldet beim stündlichen Job manchmal einen kurzen Berechtigungs-Fehler,
+          # der beim zweiten Versuch weg ist -> einmal nach 60 Sekunden wiederholen.
+          deploy || { echo "Erster Versuch fehlgeschlagen – neuer Versuch in 60 Sekunden"; sleep 60; deploy; }
