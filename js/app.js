@@ -2,23 +2,24 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=23';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=23';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=24';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=24';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=23';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=23';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=23';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=23';
-import { compressImage } from './images.js?v=23';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=23';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=23';
-import { toPlain, expensesCsv } from './export.js?v=23';
-import { firebaseConfig } from './firebase-config.js?v=23';
+} from './chores.js?v=24';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=24';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=24';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=24';
+import { compressImage } from './images.js?v=24';
+import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=24';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=24';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=24';
+import { toPlain, expensesCsv } from './export.js?v=24';
+import { firebaseConfig } from './firebase-config.js?v=24';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
-// Versionsnummer aus der Adresse dieser Datei (app.js?v=23) – zeigt, ob das Handy die neueste Version hat
+// Versionsnummer aus der Adresse dieser Datei (app.js?v=24) – zeigt, ob das Handy die neueste Version hat
 const APP_VERSION = new URL(import.meta.url).searchParams.get('v') ?? '?';
 const $ = (selector) => document.querySelector(selector);
 
@@ -53,6 +54,7 @@ const state = {
   tab: 'start',
   absences: [],
   polls: [],
+  invites: [],
   editingId: null,
 };
 
@@ -149,9 +151,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=23')).createDemoBackend();
+      backend = (await import('./demo.js?v=24')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=23')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=24')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -185,6 +187,7 @@ function handleUser(user) {
   listen('noteImages', (docs) => { state.noteImages = docs; renderAll(); });
   listen('absences', (docs) => { state.absences = docs; renderAll(); });
   listen('polls', (docs) => { state.polls = docs; renderAll(); });
+  listen('invites', (docs) => { state.invites = docs; renderAll(); });
   listen('payments', (docs) => { state.payments = docs; renderAll(); });
   listen('settlements', (docs) => { state.settlements = docs; renderAll(); });
   listen('chores', (docs) => { state.chores = Object.fromEntries(docs.map((d) => [d.id, d])); renderAll(); });
@@ -315,7 +318,10 @@ function renderAll() {
   const tabButton = document.querySelector('.tabbar [data-tab=putzplan]');
   tabButton.classList.toggle('has-badge', open > 0);
   // Punkt an "Start", solange eine Abstimmung auf deine Stimme wartet
-  document.querySelector('.tabbar [data-tab=start]').classList.toggle('has-badge', openPolls().some((p) => p.votes?.[state.me] == null));
+  // Punkt an "Start": Abstimmung oder Aktion wartet auf deine Antwort
+  document.querySelector('.tabbar [data-tab=start]').classList.toggle('has-badge',
+    openPolls().some((p) => p.votes?.[state.me] == null)
+    || activeInvites().some((i) => i.createdBy !== state.me && !i.responses?.[state.me]));
 }
 
 // ---------- Wischen zwischen den Bereichen ----------
@@ -1492,6 +1498,7 @@ async function exportJson() {
     noteImages: state.noteImages,
     absences: state.absences,
     polls: state.polls,
+    invites: state.invites,
   });
   const saved = await saveFile(`projekt-koelle-sicherung-${todayISO()}.json`, JSON.stringify(data, null, 2), 'application/json');
   if (saved) {
@@ -1543,6 +1550,7 @@ function renderStart() {
     </div>
     ${startChoreCard(myChores)}
     ${pollsCard()}
+    ${invitesCard()}
     ${absencesCard()}`;
 }
 
@@ -1636,6 +1644,107 @@ function onSubmitAbsence(event) {
 function deleteAbsence(id) {
   const absence = state.absences.find((a) => a.id === id);
   if (absence) removeWithUndo('Abwesenheit gelöscht', [{ col: 'absences', doc: absence }]);
+}
+
+// ---------- Wer hat Bock? ----------
+
+const activeInvites = () => state.invites
+  .filter((i) => isInviteActive(i, toMillis(i.createdAt)))
+  .sort((a, b) => (Date.parse(a.at ?? '') || toMillis(a.createdAt)) - (Date.parse(b.at ?? '') || toMillis(b.createdAt)));
+
+function invitesCard() {
+  const items = activeInvites().map((inv) => {
+    const responses = inv.responses ?? {};
+    const yes = PERSON_IDS.filter((id) => id === inv.createdBy || responses[id] === 'yes');
+    const no = PERSON_IDS.filter((id) => id !== inv.createdBy && responses[id] === 'no');
+    const mine = inv.createdBy === state.me;
+    const myAnswer = responses[state.me];
+    const count = inv.kind === 'food' ? `${yes.length} ${yes.length === 1 ? 'Portion' : 'Portionen'}` : `${yes.length} dabei`;
+    return `
+      <div class="invite">
+        <div class="invite-head">
+          <span class="invite-emoji-big" aria-hidden="true">${esc(inv.emoji || '🙋')}</span>
+          <span class="invite-main">
+            <strong>${esc(inv.title)}</strong>
+            <small>${esc(personName(inv.createdBy))} · ${esc(inviteWhen(inv))}${inv.note ? ` · ${esc(inv.note)}` : ''}</small>
+          </span>
+        </div>
+        <div class="invite-people">
+          <span class="invite-yes">${yes.map((id) => avatar(id, true)).join('')} <span>${count}</span></span>
+          ${no.length ? `<span class="invite-no">nicht dabei: ${no.map((id) => esc(personName(id))).join(', ')}</span>` : ''}
+        </div>
+        <div class="invite-actions">
+          ${mine
+            ? `<button class="link-btn" data-action="invite-delete" data-id="${esc(inv.id)}">Absagen</button>`
+            : `<button class="btn small${myAnswer === 'yes' ? ' primary' : ''}" data-action="invite-answer" data-id="${esc(inv.id)}" data-answer="yes">Bin dabei 👍</button>
+               <button class="btn small${myAnswer === 'no' ? ' chosen-no' : ''}" data-action="invite-answer" data-id="${esc(inv.id)}" data-answer="no">Diesmal nicht</button>`}
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <section class="card">
+      <div class="card-head"><h2>🙋 Wer hat Bock?</h2><button class="link-btn" data-action="invite-new">＋ Neu</button></div>
+      ${items || '<p class="empty">Gerade nichts los. Kochst du? Lust auf Film oder Bouldern? Frag die anderen!</p>'}
+    </section>`;
+}
+
+function openInviteForm() {
+  $('#i-templates').innerHTML = INVITE_TEMPLATES.map((t, i) => `
+    <button type="button" class="chip-btn" data-action="invite-template" data-index="${i}">${t.emoji} ${esc(t.title)}</button>`).join('');
+  $('#i-emoji').value = '🙋';
+  $('#i-title').value = '';
+  $('#i-note').value = '';
+  $('#invite-form input[name=iWhen][value=now]').checked = true;
+  $('#i-time').hidden = true;
+  $('#i-error').textContent = '';
+  state.inviteKind = 'other';
+  $('#invite-dialog').showModal();
+}
+
+function useInviteTemplate(index) {
+  const t = INVITE_TEMPLATES[index];
+  $('#i-emoji').value = t.emoji;
+  $('#i-title').value = t.title;
+  state.inviteKind = t.kind;
+}
+
+function onSubmitInvite(event) {
+  event.preventDefault();
+  const title = $('#i-title').value.trim();
+  if (!title) {
+    $('#i-error').textContent = 'Bitte kurz eingeben, was du vorhast.';
+    return;
+  }
+  const when = $('#invite-form input[name=iWhen]:checked').value;
+  let at = null;
+  if (when !== 'now') {
+    const [h, m] = ($('#i-time').value || '19:00').split(':').map(Number);
+    const d = new Date();
+    if (when === 'tomorrow') d.setDate(d.getDate() + 1);
+    d.setHours(h, m, 0, 0);
+    at = d.toISOString();
+  }
+  // "Kochen" erkennt die App auch am Text, damit Portionen gezählt werden
+  const kind = state.inviteKind === 'food' || /koch|essen|mitessen|grill|back/i.test(title) ? 'food' : 'other';
+  backend.add('invites', {
+    emoji: $('#i-emoji').value.trim() || '🙋', title, note: $('#i-note').value.trim(), at, kind,
+    responses: {}, createdBy: state.me, createdAt: backend.now(),
+  }).catch(showError);
+  $('#invite-dialog').close();
+  toast('Reingestellt ✓ Die anderen sehen es auf der Startseite.');
+}
+
+function answerInvite(id, answer) {
+  const inv = state.invites.find((i) => i.id === id);
+  if (!inv) return;
+  // Nochmal auf dieselbe Antwort tippen nimmt sie zurück
+  const value = inv.responses?.[state.me] === answer ? null : answer;
+  backend.update('invites', id, { [`responses.${state.me}`]: value }).catch(showError);
+}
+
+function deleteInvite(id) {
+  const inv = state.invites.find((i) => i.id === id);
+  if (inv) removeWithUndo('Aktion abgesagt', [{ col: 'invites', doc: inv }]);
 }
 
 // ---------- Abstimmungen ----------
@@ -1748,7 +1857,7 @@ function renderSearch() {
 
 // ---------- Sicherung zurückspielen ----------
 
-const RESTORE_COLLECTIONS = ['expenses', 'payments', 'settlements', 'recurring', 'shopping', 'favorites', 'chores', 'notes', 'noteImages', 'absences', 'polls'];
+const RESTORE_COLLECTIONS = ['expenses', 'payments', 'settlements', 'recurring', 'shopping', 'favorites', 'chores', 'notes', 'noteImages', 'absences', 'polls', 'invites'];
 
 async function restoreBackup(file) {
   let data;
@@ -2037,6 +2146,10 @@ function onClick(event) {
     case 'absence-new': openAbsenceForm(); break;
     case 'absence-delete': deleteAbsence(el.dataset.id); break;
     case 'poll-new': openPollForm(); break;
+    case 'invite-new': openInviteForm(); break;
+    case 'invite-template': useInviteTemplate(Number(el.dataset.index)); break;
+    case 'invite-answer': answerInvite(el.dataset.id, el.dataset.answer); break;
+    case 'invite-delete': deleteInvite(el.dataset.id); break;
     case 'poll-add-option':
       if (document.querySelectorAll('#p-options .poll-input').length < 6) $('#p-options').insertAdjacentHTML('beforeend', pollOptionInput());
       break;
@@ -2135,6 +2248,14 @@ $('#n-file').addEventListener('change', (event) => {
 });
 $('#absence-form').addEventListener('submit', onSubmitAbsence);
 $('#poll-form').addEventListener('submit', onSubmitPoll);
+$('#invite-form').addEventListener('submit', onSubmitInvite);
+$('#invite-form').addEventListener('change', (event) => {
+  if (event.target.name === 'iWhen') $('#i-time').hidden = event.target.value === 'now';
+});
+// Eigener Text statt Vorlage -> normale Aktion (außer der Text klingt nach Kochen)
+$('#i-title').addEventListener('input', () => { state.inviteKind = 'other'; });
+// Abgelaufene Aktionen verschwinden auch ohne neue Daten
+setInterval(() => { if (state.me) renderStart(); }, 60000);
 $('#search-input').addEventListener('input', renderSearch);
 $('#restore-file').addEventListener('change', (event) => {
   const file = event.target.files[0];

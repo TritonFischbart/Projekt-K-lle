@@ -79,6 +79,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `js/export.js` | Datensicherung (JSON) und Ausgaben-Tabelle (CSV für Excel) |
 | `js/absences.js` | Urlaubs-Modus: wer wann weg ist |
 | `js/images.js` | Bilder fürs Schwarze Brett auf dem Handy verkleinern |
+| `js/invites.js` | „Wer hat Bock?“: Vorlagen, wann eine Aktion abläuft, Zeitangabe |
 | `js/firebase.js` | Firebase-Anbindung (Backend) |
 | `js/demo.js` | Demo-Backend mit Beispieldaten (`?demo`) |
 | `manifest.webmanifest`, `icons/` | App-Symbol (Kölner Dom) für den Home-Bildschirm |
@@ -117,6 +118,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `settings/backup` | Wann zuletzt gesichert wurde (`at`, `by`) |
 | `settings/einkauf` | Eigene Reihenfolge der Einkaufs-Kategorien (`order[]`) |
 | `absences` | Abwesenheiten: `person, from, to ("2026-11-10"), note` |
+| `invites` | „Wer hat Bock?“: `emoji, title, note, at (ISO oder null = jetzt), kind (food/other), responses {person: yes/no}` |
 | `polls` | Abstimmungen: `question, options[], votes {person: index}, closed, closedAt` (Stimme per `votes.{person}` speichern) |
 
 Ausgaben aus Daueraufträgen haben die feste ID `rec_{auftrag}_{monat}` und das Feld
@@ -150,7 +152,7 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   hat keinen eigenen Knopf mehr – er hängt an der Startseite („Ganzer Kalender ›“,
   „‹ Zur Übersicht“), damit die Leiste auf dem Handy nicht zu voll wird.
 - **Start (Übersicht)**: Begrüßung, nächste Termine, Kontostand, Einkaufsliste, eigene
-  Putzaufgabe (mit „Erledigt“), Abstimmungen, „Wer ist weg?“.
+  Putzaufgabe (mit „Erledigt“), Abstimmungen, „Wer hat Bock?“, „Wer ist weg?“.
 - **Rückgängig**: Gelöschte Ausgaben, Daueraufträge, Überweisungen, Einkäufe, Notizen,
   Abstimmungen und Abwesenheiten lassen sich 6 Sekunden lang über die Meldung zurückholen.
 - **Offline-Hinweis** oben, wenn das Handy kein Netz hat (Firestore speichert später).
@@ -216,6 +218,16 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   Roter Punkt an „Start“, solange man selbst noch nicht abgestimmt hat.
 - **Keine Frist / kein automatisches Ende** – ausdrücklich nicht gewünscht.
 
+### 🙋 Wer hat Bock? (Idee von Lukas/Jana)
+- Unter den Abstimmungen auf der Startseite: spontane Aktionen („Ich koche – wer isst mit?“,
+  Film, Bouldern, Kneipe, Sport, Spieleabend oder eigener Text) mit „Jetzt“ oder Uhrzeit
+  heute/morgen und optionaler Notiz. Andere tippen „Bin dabei 👍“ / „Diesmal nicht“
+  (nochmal tippen = zurücknehmen). Beim Essen werden „Portionen“ gezählt (auch erkannt an
+  Wörtern wie koch/essen/grill/back). Ersteller kann „Absagen“ (mit Rückgängig).
+- Verschwindet von selbst: mit Uhrzeit 4 Std. danach, „Jetzt“ nach 6 Std. (spätestens
+  3 Uhr nachts) – Regeln in `js/invites.js`. Roter Punkt an „Start“, solange man auf eine
+  Aktion der anderen noch nicht geantwortet hat.
+
 ### 📌 Infos
 - **Schwarzes Brett**: Notizen mit Vorlagen (WLAN, Vermieter, Zählerstände, Schlüssel,
   Notfall). „Text kopieren“ z. B. fürs WLAN-Passwort.
@@ -240,7 +252,7 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 ## Merkliste / To-do für später (noch nicht gebaut)
 
 > Die Aufgaben stehen auch als **GitHub-Issues** im Projekt (Reiter „Issues“):
-> #10 Test mit Jana und Jul · #11 Termine direkt eintragen · #12 Push-Nachrichten ·
+> #11 Termine direkt eintragen · #12 Push-Nachrichten ·
 > #13 Kassenbon-Fotos · #14 Müllabfuhr-Termine · #15 Ideen-Sammlung · #24 WG-Radio.
 > Wenn etwas davon erledigt ist, das Issue schließen und hier austragen.
 
@@ -257,8 +269,7 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   Kölner Sender per Stream einbinden, eigener kostenloser WG-Sender (z. B. laut.fm) oder
   gemeinsame Spotify-Playlist einbetten. Vorher mit Lukas klären, welche Variante.
 - **Müllabfuhr-Termine** der AWB Köln in den Google-Kalender übernehmen (ohne Code).
-- Prüfen, ob die Google-Anmeldung in der Home-Bildschirm-App auf allen Handys klappt
-  (Teil des Tests mit Jana und Jul, #10).
+- ~~Test mit Jana und Jul (#10)~~ – erledigt am 1. Nov. 2026: Anmeldung bei allen dreien klappt.
 - **Ideen-Sammlung** (#15, erst nach dem Test entscheiden): „Ich geh jetzt einkaufen“,
   Schnell-Notizen auf der Startseite, Bewertung für den WG-Abend.
 - **Ausdrücklich nicht gewünscht** (nicht bauen): Erinnerung an offene Schulden,

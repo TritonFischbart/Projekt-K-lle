@@ -660,3 +660,21 @@ main { overflow-x: clip; }
 .app-version { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: 0.8rem; }
 /* Seitliches Wischen gehört der App (Bereich wechseln), Hoch/Runter-Scrollen und Zoomen dem Browser */
 #screen-app main { touch-action: pan-y pinch-zoom; }
+
+/* ---------- Wer hat Bock? ---------- */
+.invite + .invite { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.invite-head { display: flex; gap: 12px; align-items: center; }
+.invite-emoji-big { font-size: 1.8rem; line-height: 1; }
+.invite-main { display: grid; }
+.invite-main strong { font-size: 1.05rem; }
+.invite-main small { color: var(--muted); }
+.invite-people { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 8px; }
+.invite-yes { display: flex; align-items: center; gap: 3px; font-weight: 600; font-size: 0.9rem; }
+.invite-yes > span:last-child { margin-left: 6px; }
+.invite-no { color: var(--muted); font-size: 0.82rem; }
+.invite-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn.small.chosen-no { background: var(--bg); border-color: var(--muted); color: var(--muted); }
+.invite-title-row { display: flex; gap: 8px; }
+.invite-title-row .invite-emoji { width: 56px; flex: none; text-align: center; font-size: 1.3rem; padding: 6px; }
+#i-time { margin-top: 8px; }
+#i-templates .chip-btn { font-size: 0.88rem; }

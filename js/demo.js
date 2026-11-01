@@ -1,7 +1,7 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=23';
+import { weekKey } from './chores.js?v=24';
 
 // Einfacher gezeichneter Grundriss als Beispielbild
 function demoFloorPlan() {
@@ -66,6 +66,11 @@ export function createDemoBackend() {
     absences: [
       { id: 'a1', person: 'jana', from: daysAgo(-1), to: daysAgo(-4), note: 'Hamburg' },
       { id: 'a2', person: 'julian', from: daysAgo(-20), to: daysAgo(-27), note: 'Urlaub' },
+    ],
+    invites: [
+      { id: 'inv1', emoji: '🍳', title: 'Ich koche – wer isst mit?', note: 'Spaghetti Bolo', kind: 'food',
+        at: (() => { const d = new Date(); d.setHours(23, 59, 0, 0); return d.toISOString(); })(),
+        responses: { julian: 'yes' }, createdBy: 'jana', createdAt: created(0) },
     ],
     polls: [
       { id: 'p1', question: 'Pizza oder Sushi am Freitag?', options: ['Pizza 🍕', 'Sushi 🍣', 'Selber kochen'], votes: { jana: 1, julian: 0 }, closed: false, createdBy: 'jana', createdAt: created(1) },
