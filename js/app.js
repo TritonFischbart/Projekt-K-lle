@@ -2,24 +2,24 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=24';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=24';
+import { PEOPLE, CATEGORIES, CHORES, PUSH_TYPES } from './config.js?v=25';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=25';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=24';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=24';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=24';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=24';
-import { compressImage } from './images.js?v=24';
-import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=24';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=24';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=24';
-import { toPlain, expensesCsv } from './export.js?v=24';
-import { firebaseConfig } from './firebase-config.js?v=24';
+} from './chores.js?v=25';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=25';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=25';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=25';
+import { compressImage } from './images.js?v=25';
+import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=25';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=25';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=25';
+import { toPlain, expensesCsv } from './export.js?v=25';
+import { firebaseConfig } from './firebase-config.js?v=25';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
-// Versionsnummer aus der Adresse dieser Datei (app.js?v=24) – zeigt, ob das Handy die neueste Version hat
+// Versionsnummer aus der Adresse dieser Datei (app.js?v=25) – zeigt, ob das Handy die neueste Version hat
 const APP_VERSION = new URL(import.meta.url).searchParams.get('v') ?? '?';
 const $ = (selector) => document.querySelector(selector);
 
@@ -55,6 +55,8 @@ const state = {
   absences: [],
   polls: [],
   invites: [],
+  pushSettings: {},
+  pushBusy: false,
   editingId: null,
 };
 
@@ -151,9 +153,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=24')).createDemoBackend();
+      backend = (await import('./demo.js?v=25')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=24')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=25')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -165,6 +167,7 @@ async function start() {
     return;
   }
   $('#demo-banner').hidden = !backend.isDemo;
+  backend.onPushMessage?.((n) => toast(`${n.title ?? ''} ${n.body ?? ''}`.trim()));
   backend.onUser(handleUser);
 }
 
@@ -188,6 +191,7 @@ function handleUser(user) {
   listen('absences', (docs) => { state.absences = docs; renderAll(); });
   listen('polls', (docs) => { state.polls = docs; renderAll(); });
   listen('invites', (docs) => { state.invites = docs; renderAll(); });
+  listen('pushSettings', (docs) => { state.pushSettings = Object.fromEntries(docs.map((d) => [d.id, d])); renderAll(); });
   listen('payments', (docs) => { state.payments = docs; renderAll(); });
   listen('settlements', (docs) => { state.settlements = docs; renderAll(); });
   listen('chores', (docs) => { state.chores = Object.fromEntries(docs.map((d) => [d.id, d])); renderAll(); });
@@ -282,7 +286,7 @@ function claim(id) {
 function renderHeader() {
   const button = $('#me-button');
   button.innerHTML = avatar(state.me);
-  button.setAttribute('aria-label', `Angemeldet als ${personName(state.me)} – abmelden`);
+  button.setAttribute('aria-label', `Angemeldet als ${personName(state.me)} – Einstellungen`);
 }
 
 // direction: 1 = von rechts hereinschieben (nach links gewischt), -1 = von links
@@ -295,7 +299,7 @@ function switchTab(tab, direction = 0) {
     void section.offsetWidth; // Animation neu starten
     section.classList.add(direction > 0 ? 'slide-from-right' : 'slide-from-left');
   }
-  const barTab = tab === 'kalender' ? 'start' : tab;
+  const barTab = tab === 'kalender' ? 'start' : tab; // Einstellungen: kein Knopf unten markiert
   document.querySelectorAll('.tabbar button').forEach((b) => {
     if (b.dataset.tab === barTab) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
@@ -313,6 +317,7 @@ function renderAll() {
   renderPutzplan();
   renderKalender();
   renderInfos();
+  renderSettings();
   renderStart();
   const open = myOpenChores().length;
   const tabButton = document.querySelector('.tabbar [data-tab=putzplan]');
@@ -378,6 +383,7 @@ function onTouchEnd(event) {
   // Nur deutliches, eher waagerechtes Wischen zählt
   if (!quick || Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
   if (document.querySelector('dialog[open]')) return;
+  if (state.tab === 'settings') return; // Einstellungen liegen außerhalb der Reihe
   const current = state.tab === 'kalender' ? 'start' : state.tab;
   const next = TAB_ORDER[TAB_ORDER.indexOf(current) + (dx < 0 ? 1 : -1)];
   if (next) switchTab(next, dx < 0 ? 1 : -1);
@@ -1338,12 +1344,6 @@ function renderInfos() {
       </div>
     </article>`).join('');
 
-  const last = state.backup?.at ? new Date(toMillis(state.backup.at)) : null;
-  const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
-  const backupInfo = last
-    ? `Letzte Sicherung: ${days === 0 ? 'heute' : days === 1 ? 'gestern' : `vor ${days} Tagen`} von ${esc(personName(state.backup.by))}.`
-    : 'Es wurde noch keine Sicherung gemacht.';
-
   $('#tab-infos').innerHTML = `
     <section class="card">
       <div class="card-head"><h2>📌 Schwarzes Brett</h2><button class="link-btn" data-action="note-new">＋ Notiz</button></div>
@@ -1351,7 +1351,73 @@ function renderInfos() {
       ${templates.length ? `<div class="quick-chips">${templates.map((t, i) => `
         <button class="quick-chip" data-action="note-template" data-index="${NOTE_TEMPLATES.indexOf(t)}">＋ ${esc(t.title)}</button>`).join('')}</div>` : ''}
     </section>
-    ${noteCards}
+    ${noteCards}`;
+}
+
+// ---------- Einstellungen ----------
+
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const PUSH_TOKEN_KEY = 'koelle.pushToken';
+function storedPushToken() {
+  try { return localStorage.getItem(PUSH_TOKEN_KEY); } catch { return null; }
+}
+function storePushToken(token) {
+  try {
+    if (token) localStorage.setItem(PUSH_TOKEN_KEY, token);
+    else localStorage.removeItem(PUSH_TOKEN_KEY);
+  } catch { /* privater Modus: dann eben nicht merken */ }
+}
+
+const myPushTypes = () => state.pushSettings[state.me]?.types ?? {};
+const pushTypeOn = (type) => myPushTypes()[type.id] ?? type.default;
+
+function pushCard() {
+  const deviceOn = Boolean(storedPushToken()) && (backend.isDemo || ('Notification' in window && Notification.permission === 'granted'));
+  let status;
+  if (!backend.pushReady) {
+    status = '<p class="hint left">Wird gerade eingerichtet – bald kannst du hier Benachrichtigungen einschalten.</p>';
+  } else if (IS_IOS && !IS_HOME_SCREEN_APP && !backend.isDemo) {
+    status = '<p class="hint left">📱 Auf dem iPhone/iPad gehen Benachrichtigungen nur in der <strong>App vom Home-Bildschirm</strong>. Öffne Projekt Kölle von dort und schalte sie hier ein.</p>';
+  } else if ('Notification' in window && Notification.permission === 'denied' && !backend.isDemo) {
+    status = '<p class="hint left">🚫 Benachrichtigungen sind für diese App blockiert. Erlaube sie in den Einstellungen deines Handys (Mitteilungen → Projekt Kölle) und öffne die App neu.</p>';
+  } else if (deviceOn) {
+    status = `<p class="push-status">✅ Auf diesem Handy eingeschaltet</p>
+      <div class="push-buttons">
+        <button class="btn small" data-action="push-test"${state.pushBusy ? ' disabled' : ''}>Test-Nachricht senden</button>
+        <button class="link-btn" data-action="push-off">Auf diesem Handy ausschalten</button>
+      </div>`;
+  } else {
+    status = `<button class="btn primary full" data-action="push-on"${state.pushBusy ? ' disabled' : ''}>${state.pushBusy ? 'Einen Moment …' : '🔔 Auf diesem Handy einschalten'}</button>
+      <p class="hint left">Einschalten musst du auf jedem Handy/iPad einmal, auf dem du Nachrichten möchtest.</p>`;
+  }
+  const toggles = backend.pushReady ? `
+    <h3 class="sub-title">Was möchtest du bekommen?</h3>
+    <ul class="push-types">${PUSH_TYPES.map((t) => `
+      <li>
+        <label class="switch-row">
+          <span class="switch-text"><span>${t.icon} ${esc(t.label)}</span><small>${esc(t.hint)}</small></span>
+          <input type="checkbox" class="switch" data-push-type="${t.id}"${pushTypeOn(t) ? ' checked' : ''}>
+        </label>
+      </li>`).join('')}</ul>
+    <p class="hint left">Gilt für alle deine Geräte. Nachrichten über deine eigenen Einträge bekommst du nicht.</p>` : '';
+  return `<section class="card"><h2>🔔 Benachrichtigungen</h2>${status}${toggles}</section>`;
+}
+
+function renderSettings() {
+  const last = state.backup?.at ? new Date(toMillis(state.backup.at)) : null;
+  const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+  const backupInfo = last
+    ? `Letzte Sicherung: ${days === 0 ? 'heute' : days === 1 ? 'gestern' : `vor ${days} Tagen`} von ${esc(personName(state.backup.by))}.`
+    : 'Es wurde noch keine Sicherung gemacht.';
+
+  $('#tab-settings').innerHTML = `
+    <h1 class="settings-title">⚙️ Einstellungen</h1>
+    ${pushCard()}
+    <section class="card">
+      <h2>📅 Kalender</h2>
+      <p class="hint left">${state.calendar.config ? 'Euer Google-Kalender ist verbunden.' : 'Noch kein Kalender verbunden.'}</p>
+      <button class="btn outline full" data-action="calendar-settings">${state.calendar.config ? 'Kalender-Einstellungen' : 'Kalender verbinden'}</button>
+    </section>
     <section class="card${days === null || days > 30 ? ' notice' : ''}">
       <h2>💾 Datensicherung</h2>
       <p class="hint left">${backupInfo} Am besten einmal im Monat sichern und die Datei z. B. in iCloud oder Google Drive ablegen.</p>
@@ -1361,7 +1427,61 @@ function renderInfos() {
         <button class="btn outline full" data-action="restore-open">Sicherung zurückspielen</button>
       </div>
     </section>
+    <section class="card">
+      <h2>👤 Konto</h2>
+      <div class="row">${avatar(state.me)}<span class="row-name">${esc(personName(state.me))}<small>${esc(state.user?.email ?? '')}</small></span></div>
+      <button class="btn outline full logout-btn" data-action="logout">Abmelden</button>
+    </section>
     <p class="app-version">Projekt Kölle · Version ${APP_VERSION}</p>`;
+}
+
+async function pushOn() {
+  if (state.pushBusy) return;
+  state.pushBusy = true;
+  renderSettings();
+  try {
+    if (!(await backend.pushSupported())) {
+      toast('Dieses Gerät/dieser Browser unterstützt leider keine Benachrichtigungen.', true);
+      return;
+    }
+    const token = await backend.enablePush();
+    await backend.set('pushTokens', token, {
+      person: state.me,
+      device: navigator.userAgent.slice(0, 120),
+      createdAt: backend.now(),
+    });
+    storePushToken(token);
+    toast('Benachrichtigungen eingeschaltet ✓');
+  } catch (err) {
+    console.error(err);
+    toast(err?.code === 'denied'
+      ? 'Du hast Benachrichtigungen nicht erlaubt. Das kannst du in den Handy-Einstellungen ändern.'
+      : `Einschalten hat nicht geklappt: ${err?.message ?? err}`, true);
+  } finally {
+    state.pushBusy = false;
+    renderSettings();
+  }
+}
+
+async function pushOff() {
+  const token = storedPushToken();
+  if (token) backend.remove('pushTokens', token).catch(showError);
+  await backend.disablePush();
+  storePushToken(null);
+  renderSettings();
+  toast('Auf diesem Handy ausgeschaltet');
+}
+
+function pushTest() {
+  backend.add('pushTests', { person: state.me, createdAt: backend.now() }).catch(showError);
+  toast(backend.isDemo ? 'Demo: Hier käme jetzt eine Test-Nachricht.' : 'Test-Nachricht ist unterwegs – kommt in ein paar Sekunden.');
+}
+
+function setPushType(type, on) {
+  backend.set('pushSettings', state.me, {
+    types: { ...myPushTypes(), [type]: on },
+    updatedAt: backend.now(),
+  }).catch(showError);
 }
 
 const imagesOf = (noteId) => state.noteImages
@@ -2123,6 +2243,9 @@ function onClick(event) {
   switch (action) {
     case 'login': doLogin(); break;
     case 'logout': if (confirm('Abmelden?')) backend.logout(); break;
+    case 'push-on': pushOn(); break;
+    case 'push-off': pushOff(); break;
+    case 'push-test': pushTest(); break;
     case 'claim': claim(el.dataset.person); break;
     case 'tab': switchTab(el.dataset.tab); break;
     case 'add-expense': openExpenseForm(); break;
@@ -2216,6 +2339,9 @@ function onClick(event) {
 }
 
 document.addEventListener('click', onClick);
+document.addEventListener('change', (event) => {
+  if (event.target.dataset.pushType) setPushType(event.target.dataset.pushType, event.target.checked);
+});
 document.addEventListener('touchstart', onTouchStart, { passive: true });
 document.addEventListener('touchmove', onTouchMove, { passive: true });
 document.addEventListener('touchend', onTouchEnd, { passive: true });

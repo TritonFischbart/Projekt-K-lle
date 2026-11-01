@@ -1,7 +1,7 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=24';
+import { weekKey } from './chores.js?v=25';
 
 // Einfacher gezeichneter Grundriss als Beispielbild
 function demoFloorPlan() {
@@ -80,6 +80,9 @@ export function createDemoBackend() {
       { id: 'n3', title: '📐 Grundriss', text: 'Aus dem Exposé, 3 Zimmer, 78 m²', createdBy: 'lukas', createdAt: created(25), updatedBy: 'lukas', updatedAt: created(10) },
       { id: 'n2', title: '🏠 Vermieter & Hausverwaltung', text: 'Herr Beispiel\nTelefon: 0221 123456', createdBy: 'jana', createdAt: created(15), updatedBy: 'jana', updatedAt: created(4) },
     ],
+    pushSettings: [],
+    pushTokens: [],
+    pushTests: [],
     settings: [
       { id: 'putzplan', areas: [
         { id: 'bad', name: 'Bad', icon: '🛁', details: 'Toilette, Waschbecken, Dusche, Spiegel', every: 1 },
@@ -176,6 +179,13 @@ export function createDemoBackend() {
     },
 
     now: () => new Date(),
+
+    // Push im Demo-Modus nur zum Ausprobieren der Oberfläche
+    pushReady: true,
+    async pushSupported() { return true; },
+    async enablePush() { return 'demo-token'; },
+    async disablePush() {},
+    async onPushMessage() {},
 
     // Beispieltermine statt echter Google-Termine
     demoEvents() {

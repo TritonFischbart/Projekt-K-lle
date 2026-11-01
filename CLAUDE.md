@@ -44,9 +44,11 @@ früheren Gesprächen besprochen und entschieden wurde.
 ## Technik
 
 - **Reine statische Website**: HTML, CSS, JavaScript (ES-Module), **kein Build-Schritt**,
-  keine Frameworks, kein npm.
+  keine Frameworks, kein npm. Ausnahme: der Versand-Dienst für Push-Nachrichten in `functions/`
+  (Node 20, Firebase Cloud Functions v2, npm nur dort).
 - **Hosting:** GitHub Pages aus `main`, Ordner `/ (root)`. Datei `.nojekyll` vorhanden.
-- **Datenbank & Login:** Firebase (Gratis-Tarif „Spark“), Projekt-ID `projekt-koelle`.
+- **Datenbank & Login:** Firebase, Projekt-ID `projekt-koelle`. Tarif **„Blaze“** (seit Nov. 2026,
+  für Push-Nachrichten; Kreditkarte hinterlegt, Budget-Warnung 1 €, Kosten praktisch 0 €).
   - Firestore, Standort `europe-west3` (Frankfurt), Produktionsmodus.
   - Anmeldung: Google (Popup, bei Bedarf Redirect). Autorisierte Domain:
     `tritonfischbart.github.io`.
@@ -80,7 +82,13 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `js/absences.js` | Urlaubs-Modus: wer wann weg ist |
 | `js/images.js` | Bilder fürs Schwarze Brett auf dem Handy verkleinern |
 | `js/invites.js` | „Wer hat Bock?“: Vorlagen, wann eine Aktion abläuft, Zeitangabe |
-| `js/firebase.js` | Firebase-Anbindung (Backend) |
+| `js/firebase.js` | Firebase-Anbindung (Backend), inkl. Push ein/aus |
+| `firebase-messaging-sw.js` | Service Worker: zeigt Push-Nachrichten, wenn die App zu ist (Firebase-Werte doppelt eingetragen) |
+| `functions/index.js` | Versand-Dienst: Auslöser (neue Aktion/Abstimmung/Ausgabe, Test) + stündlicher Lauf |
+| `functions/logic.js` | Wer bekommt welche Nachricht, Texte (testbar: `node functions/test-logic.mjs`) |
+| `functions/shared/` | Wird beim Bereitstellen aus `js/` kopiert (chores, absences, money, calendar, config) – nicht einchecken |
+| `.github/workflows/deploy-functions.yml` | Stellt `functions/` bei Firebase bereit (braucht Secret `FIREBASE_SERVICE_ACCOUNT`) |
+| `firebase.json`, `.firebaserc` | Firebase-Projekt-Einstellungen für die Bereitstellung |
 | `js/demo.js` | Demo-Backend mit Beispieldaten (`?demo`) |
 | `manifest.webmanifest`, `icons/` | App-Symbol (Kölner Dom) für den Home-Bildschirm |
 | `ANLEITUNG.md` | Einrichtungs-Anleitung für Lukas (Firebase, Pages, Kalender) |
@@ -119,6 +127,9 @@ früheren Gesprächen besprochen und entschieden wurde.
 | `settings/einkauf` | Eigene Reihenfolge der Einkaufs-Kategorien (`order[]`) |
 | `absences` | Abwesenheiten: `person, from, to ("2026-11-10"), note` |
 | `invites` | „Wer hat Bock?“: `emoji, title, note, at (ISO oder null = jetzt), kind (food/other), responses {person: yes/no}` |
+| `pushTokens/{token}` | Ein Gerät, das Nachrichten bekommt: `person, device` (ungültige räumt der Dienst auf) |
+| `pushSettings/{person}` | Welche Nachrichtenarten eine Person will: `types {invites, polls, expenses, chores, calendar, shopping}` |
+| `pushTests` | „Test-Nachricht senden“ – der Dienst schickt sie und löscht den Eintrag |
 | `polls` | Abstimmungen: `question, options[], votes {person: index}, closed, closedAt` (Stimme per `votes.{person}` speichern) |
 
 Ausgaben aus Daueraufträgen haben die feste ID `rec_{auftrag}_{monat}` und das Feld
@@ -148,6 +159,9 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   Element mithören, weil die App bei neuen Daten neu zeichnet und das Element sonst aus
   der Seite fällt (Ende des Wischens käme nicht an); `touchcancel` zählt wie `touchend`.
   Elemente mit Klasse `no-swipe` sind ausgenommen.
+- **⚙️ Einstellungen** (Knopf oben rechts, auch Tipp auf den eigenen Kreis): Benachrichtigungen,
+  Kalender verbinden, Datensicherung, Konto/Abmelden, Versionsnummer. Gehört nicht zur
+  Wisch-Reihenfolge. (Lukas wollte Technisches gesammelt statt unter „Infos“.)
 - Untere Leiste: **Start · Ausgaben · Einkauf · Putzplan · Infos**. Der **Kalender**
   hat keinen eigenen Knopf mehr – er hängt an der Startseite („Ganzer Kalender ›“,
   „‹ Zur Übersicht“), damit die Leiste auf dem Handy nicht zu voll wird.
@@ -228,6 +242,23 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   3 Uhr nachts) – Regeln in `js/invites.js`. Roter Punkt an „Start“, solange man auf eine
   Aktion der anderen noch nicht geantwortet hat.
 
+### 🔔 Push-Nachrichten
+- Jede Person schaltet sie unter ⚙️ **pro Gerät** ein („Auf diesem Handy einschalten“) und
+  wählt **pro Person** (gilt für alle Geräte), welche Arten sie will. Liste der Arten:
+  `PUSH_TYPES` in `js/config.js` (von App und Dienst gemeinsam genutzt). Standard: alles an
+  außer Einkaufsliste. Nie Nachrichten über eigene Einträge.
+- Arten: 🙋 neue „Wer hat Bock?“-Aktion · 🗳️ neue Abstimmung · 💶 neue Ausgabe, die mich
+  betrifft (mit Anteil; Daueraufträge still) · 🧹 Putzplan (Mo 9 Uhr: deine Aufgabe; So 18 Uhr:
+  falls noch offen) · 📅 Termine heute (8 Uhr) · 🛒 Einkaufsliste (19 Uhr).
+- Zeitgesteuertes läuft über **einen** stündlichen Job (`pushHourly`, im Gratis-Kontingent).
+  Region `europe-west3`, Zeitzone Europe/Berlin.
+- iPhone/iPad: nur in der Home-Bildschirm-App (iOS 16.4+). Ist die App offen, erscheint die
+  Nachricht als Meldung unten.
+- Bereitstellung: GitHub Action bei Änderungen an `functions/**` oder den geteilten
+  `js/`-Dateien, oder per Hand („Run workflow“). Lukas wollte, dass man das Verhalten nach dem
+  Ausprobieren anpasst („wie das Handling wird“) – Rückmeldungen einplanen.
+- Den VAPID-Schlüssel (öffentlich) in `js/firebase-config.js` → `vapidKey` eintragen.
+
 ### 📌 Infos
 - **Schwarzes Brett**: Notizen mit Vorlagen (WLAN, Vermieter, Zählerstände, Schlüssel,
   Notfall). „Text kopieren“ z. B. fürs WLAN-Passwort.
@@ -236,7 +267,7 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   max. 1600 px / < 0,9 MB verkleinert und **in Firestore** gespeichert (kostenlos, kein
   Firebase Storage/„Blaze“ nötig). Vorschaubilder, Tippen = groß, nochmal = Zoom.
   PDFs gehen nicht direkt → Screenshot der Seite.
-- **Datensicherung**: „Alle Daten sichern“ (JSON, ohne API-Schlüssel) und „Ausgaben
+- **Datensicherung** (jetzt unter ⚙️ Einstellungen): „Alle Daten sichern“ (JSON, ohne API-Schlüssel) und „Ausgaben
   als Tabelle (Excel)“. Auf dem Handy über „Teilen“ speichern. Hinweis, wenn die letzte
   Sicherung über 30 Tage her ist.
 - **Sicherung zurückspielen**: JSON-Datei auswählen → Einträge aus der Sicherung werden
@@ -261,9 +292,8 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   braucht eine Google-Anmeldung mit Kalender-Berechtigung (OAuth, Zustimmungsbildschirm
   in der Google Cloud Console, im Testmodus Nutzer eintragen) – vorher mit Lukas klären.
 
-- **Push-Nachrichten** (z. B. Putz-Erinnerung) – Lukas will das später.
-  Zeitgesteuerte Erinnerungen bräuchten vermutlich Cloud Functions → Firebase-Tarif
-  „Blaze“ mit Kreditkarte. Vorher mit Lukas klären.
+- **Push-Nachrichten** (#12): gebaut (Nov. 2026). Offen, bis Lukas Teil E der Anleitung
+  erledigt hat (Blaze, VAPID-Schlüssel, Secret) und es auf den Handys getestet ist.
 - **Kassenbon-Fotos** bei Ausgaben – bräuchte Firebase Storage (ebenfalls „Blaze“).
 - **WG-Radio** (#24): Radio in der App, gespeist über einen Anbieter. Möglichkeiten:
   Kölner Sender per Stream einbinden, eigener kostenloser WG-Sender (z. B. laut.fm) oder
@@ -282,5 +312,6 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   `python3 -m http.server 8123` im Projektordner, dann mit Playwright
   `http://localhost:8123/?demo` auf iPhone- und iPad-Größe öffnen.
 - Reine Logik (`money.js`, `chores.js`, `calendar.js`, `shopcats.js`) lässt sich
-  direkt mit Node testen.
+  direkt mit Node testen. Push-Logik: `js`-Dateien nach `functions/shared/` kopieren, dann
+  `node functions/test-logic.mjs`. Den Versand selbst kann nur Lukas auf dem Handy testen.
 - Prüfen, dass die Seite auf Handy-Breite nicht breiter als der Bildschirm wird.

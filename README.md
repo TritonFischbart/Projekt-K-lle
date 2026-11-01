@@ -7,9 +7,10 @@ Die WG-Website von Jana, Jul und Lukas.
 - 📅 **Kalender** – Termine aus dem gemeinsamen Google-Kalender (über die Startseite)
 - 🛒 **Einkauf** – gemeinsame Einkaufsliste, sortiert wie im Supermarkt, mit Schnellauswahl; Besorgtes wird durchgestrichen
 - 🧹 **Putzplan** – Bereiche direkt in der App bearbeitbar; wechselt jede Woche, mit Erledigt-Haken und „Ich übernehme“
-- 📌 **Infos** – Schwarzes Brett und Datensicherung
+- 📌 **Infos** – Schwarzes Brett
+- ⚙️ **Einstellungen** – Push-Nachrichten, Kalender, Datensicherung, Konto
 
-Einrichtung: siehe [ANLEITUNG.md](ANLEITUNG.md). Notizen für Claude: [CLAUDE.md](CLAUDE.md).
+Einrichtung: siehe [ANLEITUNG.md](ANLEITUNG.md) (Push-Nachrichten: Teil E). Notizen für Claude: [CLAUDE.md](CLAUDE.md).
 Ausprobieren ohne Einrichtung: die Website mit `?demo` am Ende der Adresse öffnen.
 
 ## Aufbau
