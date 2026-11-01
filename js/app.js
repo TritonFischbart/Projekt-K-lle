@@ -2,24 +2,24 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES, PUSH_TYPES } from './config.js?v=27';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=27';
+import { PEOPLE, CATEGORIES, CHORES, PUSH_TYPES } from './config.js?v=28';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=28';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=27';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=27';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=27';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=27';
-import { compressImage } from './images.js?v=27';
-import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=27';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=27';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=27';
-import { toPlain, expensesCsv } from './export.js?v=27';
-import { firebaseConfig } from './firebase-config.js?v=27';
+} from './chores.js?v=28';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=28';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=28';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=28';
+import { compressImage } from './images.js?v=28';
+import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=28';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=28';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=28';
+import { toPlain, expensesCsv } from './export.js?v=28';
+import { firebaseConfig } from './firebase-config.js?v=28';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
-// Versionsnummer aus der Adresse dieser Datei (app.js?v=27) – zeigt, ob das Handy die neueste Version hat
+// Versionsnummer aus der Adresse dieser Datei (app.js?v=28) – zeigt, ob das Handy die neueste Version hat
 const APP_VERSION = new URL(import.meta.url).searchParams.get('v') ?? '?';
 const $ = (selector) => document.querySelector(selector);
 
@@ -153,9 +153,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=27')).createDemoBackend();
+      backend = (await import('./demo.js?v=28')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=27')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=28')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -339,6 +339,45 @@ let swipe = null;
 const IS_HOME_SCREEN_APP = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const EDGE = IS_HOME_SCREEN_APP ? 0 : 16;
 
+// ---------- Nach unten ziehen = aktualisieren ----------
+const PULL_DISTANCE = 90;
+const PULL_ENABLED = IS_HOME_SCREEN_APP;
+
+function showPull(dy, dx) {
+  const el = $('#pull-refresh');
+  if (dy < 15 || dx > dy) { hidePull(); return; }
+  const top = $('#screen-app .topbar')?.getBoundingClientRect().bottom ?? 0;
+  const progress = Math.min(dy / PULL_DISTANCE, 1);
+  el.hidden = false;
+  el.style.top = `${top + 8 + progress * 24}px`;
+  el.style.opacity = String(0.3 + progress * 0.7);
+  el.classList.toggle('ready', progress >= 1);
+  el.querySelector('.pull-icon').style.transform = `rotate(${progress * 180}deg)`;
+  el.querySelector('.pull-text').textContent = progress >= 1 ? 'Loslassen zum Aktualisieren' : 'Zum Aktualisieren ziehen';
+}
+
+function hidePull() {
+  const el = $('#pull-refresh');
+  if (el && !el.classList.contains('busy')) el.hidden = true;
+}
+
+function refreshApp() {
+  const el = $('#pull-refresh');
+  // Ohne Netz würde ein Neuladen eine leere Seite zeigen – dann nur die Termine neu holen.
+  if (!navigator.onLine) {
+    loadEvents();
+    toast('Kein Internet – die Daten kommen, sobald du wieder online bist.');
+    return;
+  }
+  el.hidden = false;
+  el.classList.add('busy', 'ready');
+  el.querySelector('.pull-icon').style.transform = '';
+  el.querySelector('.pull-icon').textContent = '↻';
+  el.querySelector('.pull-text').textContent = 'Wird aktualisiert …';
+  // Ganze App neu laden: holt alle Daten, die Termine und auch eine neue App-Version.
+  setTimeout(() => location.reload(), 150);
+}
+
 function onTouchStart(event) {
   swipe = null;
   if (event.touches.length !== 1 || $('#screen-app').hidden) return;
@@ -346,7 +385,10 @@ function onTouchStart(event) {
   // Nicht am Bildschirmrand (dort ist die "Zurück"-Geste des Handys) und nicht in Eingabefeldern
   if (t.clientX < EDGE || t.clientX > window.innerWidth - EDGE) return;
   if (event.target.closest('input, textarea, select, dialog, .tabbar, .no-swipe')) return;
-  swipe = { x: t.clientX, y: t.clientY, lastX: t.clientX, lastY: t.clientY, time: Date.now() };
+  swipe = { x: t.clientX, y: t.clientY, lastX: t.clientX, lastY: t.clientY, time: Date.now(),
+    // Nach unten ziehen zum Aktualisieren: nur in der Home-Bildschirm-App (im Browser
+    // hat das Handy das schon selbst) und nur ganz oben auf der Seite.
+    pull: PULL_ENABLED && window.scrollY <= 0 && !document.querySelector('dialog[open]') };
   // Wird die Seite während des Wischens neu gezeichnet (neue Daten kommen an), hängt das
   // berührte Element nicht mehr in der Seite – seine Ereignisse erreichen dann `document`
   // nicht mehr. Deshalb direkt am berührten Element mithören.
@@ -369,6 +411,7 @@ function onTouchMove(event) {
   event.handledBySwipe = true; // nicht doppelt zählen (Element und document)
   swipe.lastX = event.touches[0].clientX;
   swipe.lastY = event.touches[0].clientY;
+  if (swipe.pull) showPull(swipe.lastY - swipe.y, Math.abs(swipe.lastX - swipe.x));
 }
 
 function onTouchEnd(event) {
@@ -379,7 +422,12 @@ function onTouchEnd(event) {
   const dx = x - swipe.x;
   const dy = y - swipe.y;
   const quick = Date.now() - swipe.time < 800;
+  const pull = swipe.pull;
   swipe = null;
+  if (pull) {
+    hidePull();
+    if (dy >= PULL_DISTANCE && Math.abs(dx) < dy / 2) { refreshApp(); return; }
+  }
   // Nur deutliches, eher waagerechtes Wischen zählt
   if (!quick || Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
   if (document.querySelector('dialog[open]')) return;

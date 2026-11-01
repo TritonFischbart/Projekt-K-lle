@@ -327,6 +327,21 @@ main {
 .form-actions { display: flex; gap: 10px; }
 .form-actions .primary { flex: 1; }
 
+/* ---------- Nach unten ziehen = aktualisieren ---------- */
+.pull-refresh {
+  position: fixed; left: 50%; z-index: 20; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 999px;
+  background: var(--card); color: var(--muted); border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  font-weight: 600; font-size: 0.9rem; white-space: nowrap; pointer-events: none;
+}
+.pull-refresh[hidden] { display: none; }
+.pull-refresh.ready { color: var(--brand); }
+.pull-icon { display: inline-block; font-size: 1.1rem; transition: transform 0.1s; }
+.pull-refresh.busy .pull-icon { animation: pull-spin 0.8s linear infinite; }
+@keyframes pull-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
 /* ---------- Meldung unten ---------- */
 .toast {
   position: fixed; left: 50%; z-index: 100;

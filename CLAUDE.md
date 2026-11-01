@@ -159,6 +159,11 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   Element mithören, weil die App bei neuen Daten neu zeichnet und das Element sonst aus
   der Seite fällt (Ende des Wischens käme nicht an); `touchcancel` zählt wie `touchend`.
   Elemente mit Klasse `no-swipe` sind ausgenommen.
+- **Nach unten ziehen = aktualisieren** (Wunsch von Lukas, Nov. 2026): ganz oben auf der Seite
+  nach unten ziehen → „Loslassen zum Aktualisieren“ → ganze App lädt neu (`location.reload()`,
+  holt auch Termine und neue Version). Nur in der Home-Bildschirm-App – im Browser hat das
+  Handy das schon selbst. Ohne Netz kein Neuladen (sonst leere Seite), nur Hinweis.
+  Läuft über dieselben Touch-Funktionen wie das Wischen (`swipe.pull`).
 - **⚙️ Einstellungen** (Knopf oben rechts, auch Tipp auf den eigenen Kreis): Benachrichtigungen,
   Kalender verbinden, Datensicherung, Konto/Abmelden, Versionsnummer. Gehört nicht zur
   Wisch-Reihenfolge. (Lukas wollte Technisches gesammelt statt unter „Infos“.)
