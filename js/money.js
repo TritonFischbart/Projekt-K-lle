@@ -43,6 +43,29 @@ export function expenseShares(expense, order) {
   return splitAmount(expense.amountCents, ids, order);
 }
 
+// Aufteilen nach Posten (Kassenbon): Jeder Posten wird gleich auf seine Personen verteilt.
+// Erst am Ende wird auf ganze Cent gerundet – übrige Cent bekommt, wer am knappsten
+// abgerundet wurde. So ergibt die Summe immer genau den Gesamtbetrag.
+// items: [{ cents, for: [personIds] }]
+export function itemShares(items, order) {
+  const exact = Object.fromEntries(order.map((id) => [id, 0]));
+  let total = 0;
+  for (const item of items) {
+    const ids = order.filter((id) => (item.for ?? []).includes(id));
+    if (!ids.length || !(item.cents > 0)) continue;
+    total += item.cents;
+    for (const id of ids) exact[id] += item.cents / ids.length;
+  }
+  const shares = Object.fromEntries(order.map((id) => [id, Math.floor(exact[id] + 1e-9)]));
+  let rest = total - order.reduce((sum, id) => sum + shares[id], 0);
+  const byRemainder = [...order].sort((a, b) => (exact[b] - shares[b]) - (exact[a] - shares[a]));
+  for (const id of byRemainder) {
+    if (rest <= 0) break;
+    if (exact[id] - shares[id] > 1e-9) { shares[id] += 1; rest -= 1; }
+  }
+  return Object.fromEntries(order.filter((id) => shares[id] > 0).map((id) => [id, shares[id]]));
+}
+
 // Kontostand pro Person: positiv = bekommt Geld, negativ = schuldet Geld.
 export function computeBalances(peopleIds, expenses, payments) {
   const balances = Object.fromEntries(peopleIds.map((id) => [id, 0]));

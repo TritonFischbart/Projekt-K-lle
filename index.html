@@ -8,11 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kölle">
   <title>Projekt Kölle</title>
-  <link rel="icon" href="icons/icon.svg?v=29" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=29">
-  <link rel="manifest" href="manifest.webmanifest?v=29">
-  <link rel="stylesheet" href="css/style.css?v=29">
-  <script type="module" src="js/app.js?v=29"></script>
+  <link rel="icon" href="icons/icon.svg?v=30" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=30">
+  <link rel="manifest" href="manifest.webmanifest?v=30">
+  <link rel="stylesheet" href="css/style.css?v=30">
+  <script type="module" src="js/app.js?v=30"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -23,7 +23,7 @@
   <!-- Firebase ist noch nicht eingerichtet -->
   <div id="screen-setup" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=29" alt="" class="logo">
+      <img src="icons/icon.svg?v=30" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
       <a class="btn primary" href="?demo">Demo ansehen</a>
@@ -33,7 +33,7 @@
   <!-- Anmelden -->
   <div id="screen-login" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=29" alt="" class="logo">
+      <img src="icons/icon.svg?v=30" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p>Die WG-Seite von Jana, Jul und Lukas.</p>
       <button class="btn primary" data-action="login">Mit Google anmelden</button>
@@ -66,7 +66,7 @@
       <span class="pull-text visually-hidden">Zum Aktualisieren ziehen</span>
     </div>
     <header class="topbar">
-      <div class="brand"><img src="icons/icon.svg?v=29" alt=""> Projekt Kölle</div>
+      <div class="brand"><img src="icons/icon.svg?v=30" alt=""> Projekt Kölle</div>
       <span class="topbar-actions">
         <button class="icon-btn settings-btn" data-action="tab" data-tab="settings" aria-label="Einstellungen">⚙️</button>
         <button class="me-button" id="me-button" data-action="tab" data-tab="settings"></button>
@@ -140,14 +140,26 @@
         <div class="chips" id="f-paidby"></div>
       </fieldset>
 
-      <fieldset class="field">
+      <fieldset class="field" id="f-mode-row">
+        <legend class="label">Wie aufteilen?</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="splitMode" value="even" checked><span>Gleich aufteilen</span></label>
+          <label class="chip"><input type="radio" name="splitMode" value="items"><span>🧾 Nach Posten</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field" id="f-split-row">
         <legend class="label">Für wen?</legend>
         <div class="chips" id="f-split"></div>
         <p class="hint" id="f-split-hint"></p>
-        <label class="uneven-toggle" id="f-uneven-row">
-          <input type="checkbox" id="f-uneven"> Ungleich aufteilen
-        </label>
-        <div class="shares" id="f-shares" hidden></div>
+      </fieldset>
+
+      <fieldset class="field" id="f-items-row" hidden>
+        <legend class="label">Posten</legend>
+        <p class="hint">Preis eintippen und antippen, für wen es ist. Die App rechnet Summe und Anteile selbst aus.</p>
+        <div class="items" id="f-items"></div>
+        <button type="button" class="btn outline" data-action="item-add">＋ Posten</button>
+        <div class="items-sum" id="f-items-sum"></div>
       </fieldset>
 
       <label class="field" id="f-date-row">

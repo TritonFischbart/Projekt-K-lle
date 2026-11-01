@@ -2,24 +2,24 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES, PUSH_TYPES } from './config.js?v=29';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=29';
+import { PEOPLE, CATEGORIES, CHORES, PUSH_TYPES } from './config.js?v=30';
+import { parseEuro, formatEuro, splitAmount, itemShares, expenseShares, computeBalances, suggestTransfers } from './money.js?v=30';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=29';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=29';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=29';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=29';
-import { compressImage } from './images.js?v=29';
-import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=29';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=29';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=29';
-import { toPlain, expensesCsv } from './export.js?v=29';
-import { firebaseConfig } from './firebase-config.js?v=29';
+} from './chores.js?v=30';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=30';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=30';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=30';
+import { compressImage } from './images.js?v=30';
+import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=30';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=30';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=30';
+import { toPlain, expensesCsv } from './export.js?v=30';
+import { firebaseConfig } from './firebase-config.js?v=30';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
-// Versionsnummer aus der Adresse dieser Datei (app.js?v=29) – zeigt, ob das Handy die neueste Version hat
+// Versionsnummer aus der Adresse dieser Datei (app.js?v=30) – zeigt, ob das Handy die neueste Version hat
 const APP_VERSION = new URL(import.meta.url).searchParams.get('v') ?? '?';
 const $ = (selector) => document.querySelector(selector);
 
@@ -43,7 +43,7 @@ const state = {
   monthOffset: 0,
   formMode: 'expense',
   pendingShopIds: [],
-  shareValues: {},
+  items: [],
   shopOrder: null,
   loaded: {},
   editingNote: null,
@@ -153,9 +153,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=29')).createDemoBackend();
+      backend = (await import('./demo.js?v=30')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=29')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=30')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -627,7 +627,7 @@ function expenseRow(e, readonly) {
     <span class="entry-icon" aria-hidden="true">${c.icon}</span>
     <span class="entry-main">
       <span class="entry-title">${e.recurringId ? '🔁 ' : ''}${esc(e.description)}</span>
-      <span class="entry-sub">${esc(personName(e.paidBy))} hat bezahlt · ${esc(forWhom(e.splitAmong ?? []))}${e.shares ? ' (ungleich)' : ''} · ${formatDate(e.date)}</span>
+      <span class="entry-sub">${esc(personName(e.paidBy))} hat bezahlt · ${esc(forWhom(e.splitAmong ?? []))}${e.items ? ' (nach Posten)' : e.shares ? ' (ungleich)' : ''} · ${formatDate(e.date)}</span>
     </span>
     <span class="entry-right">
       <span class="amount">${formatEuro(e.amountCents)}</span>
@@ -1191,6 +1191,8 @@ function shopToExpense() {
   openExpenseForm(null, {
     prefill: { description, category: onlyHousehold ? 'haushalt' : 'lebensmittel' },
     shopIds: items.map((i) => i.id),
+    // Jede besorgte Sache wird ein Posten – nur noch Preise eintippen.
+    items: items.map((i) => ({ name: [i.amount, i.name].filter(Boolean).join(' '), price: '', for: [...PERSON_IDS] })),
   });
 }
 
@@ -2128,84 +2130,134 @@ function openExpenseForm(expense, opts = {}) {
   $('#f-category').innerHTML = CATEGORIES.map((c) => chip('category', 'radio', c.id, `${c.icon} ${c.name}`, c.id === category)).join('');
   $('#f-paidby').innerHTML = PEOPLE.map((p) => chip('paidBy', 'radio', p.id, p.name, p.id === paidBy)).join('');
   $('#f-split').innerHTML = PEOPLE.map((p) => chip('split', 'checkbox', p.id, p.name, split.includes(p.id))).join('');
-  // Ungleich aufteilen (nicht bei Daueraufträgen)
-  $('#f-uneven-row').hidden = recurring;
-  $('#f-uneven').checked = !recurring && Boolean(expense?.shares);
-  state.shareValues = Object.fromEntries(Object.entries(expense?.shares ?? {})
-    .map(([id, cents]) => [id, (cents / 100).toFixed(2).replace('.', ',')]));
-  renderShareRows();
+  // Nach Posten aufteilen (nicht bei Daueraufträgen). Alte "ungleich"-Einträge werden
+  // zu einem Posten pro Person.
+  const euroText = (cents) => (cents / 100).toFixed(2).replace('.', ',');
+  state.items = expense?.items
+    ? expense.items.map((i) => ({ name: i.name ?? '', price: euroText(i.cents), for: [...(i.for ?? [])] }))
+    : expense?.shares
+      ? Object.entries(expense.shares).map(([id, cents]) => ({ name: `Anteil ${personName(id)}`, price: euroText(cents), for: [id] }))
+      : opts.items ?? [];
+  const byItems = !recurring && state.items.length > 0;
+  $('#f-mode-row').hidden = recurring;
+  $('#expense-form').querySelector(`input[name=splitMode][value=${byItems ? 'items' : 'even'}]`).checked = true;
+  setSplitMode(byItems);
 
   $('#f-delete').hidden = !expense;
   $('#f-error').textContent = '';
-  updateSplitHint();
   $('#expense-dialog').showModal();
-  if (!expense) $('#f-amount').focus();
+  if (byItems && opts.items) $('#f-items input[data-field=price]')?.focus();
+  else if (!expense) $('#f-amount').focus();
 }
 
-// Betrag eines Anteils: leer oder 0 = 0 Cent, ungültig = null
+// Betrag eines Postens: leer oder 0 = 0 Cent, ungültig = null
 function parseShare(text) {
   const t = String(text ?? '').trim();
   if (!t || /^0+([.,]0*)?$/.test(t)) return 0;
   return parseEuro(t);
 }
 
+const isItemMode = () => !$('#f-mode-row').hidden && $('#expense-form input[name=splitMode][value=items]').checked;
+
+// Posten aus dem Formular: nur die mit Preis zählen
+function readItems() {
+  return (state.items ?? []).map((i) => ({
+    name: i.name.trim(),
+    cents: parseShare(i.price),
+    for: PERSON_IDS.filter((id) => i.for.includes(id)),
+  }));
+}
+
 function readForm() {
   const form = $('#expense-form');
-  const selected = [...form.querySelectorAll('input[name=split]:checked')].map((i) => i.value);
-  const uneven = !$('#f-uneven-row').hidden && $('#f-uneven').checked;
-  let shares = null;
-  if (uneven) {
-    shares = Object.fromEntries(selected.map((id) => [id, parseShare(state.shareValues?.[id])]));
-  }
-  return {
-    amountCents: parseEuro($('#f-amount').value),
+  const base = {
     description: $('#f-desc').value.trim(),
     category: form.querySelector('input[name=category]:checked')?.value ?? 'sonstiges',
     paidBy: form.querySelector('input[name=paidBy]:checked')?.value ?? state.me,
-    splitAmong: shares ? selected.filter((id) => shares[id] > 0) : selected,
-    shares,
     date: $('#f-date').value || todayISO(),
+  };
+  if (isItemMode()) {
+    const all = readItems();
+    const items = all.filter((i) => i.cents > 0);
+    const shares = itemShares(items, PERSON_IDS);
+    return {
+      ...base,
+      amountCents: items.reduce((sum, i) => sum + i.cents, 0),
+      splitAmong: Object.keys(shares),
+      shares,
+      items,
+      invalidPrice: all.some((i) => i.cents == null),
+      nobody: items.find((i) => !i.for.length),
+      withoutPrice: all.filter((i) => i.cents === 0 && i.name).length, // ganz leere Zeilen stören nicht
+    };
+  }
+  return {
+    ...base,
+    amountCents: parseEuro($('#f-amount').value),
+    splitAmong: [...form.querySelectorAll('input[name=split]:checked')].map((i) => i.value),
+    shares: null,
+    items: null,
   };
 }
 
-// Eingabefelder für "ungleich aufteilen" – nur neu zeichnen, wenn sich die Auswahl ändert
-function renderShareRows() {
-  const box = $('#f-shares');
-  const on = !$('#f-uneven-row').hidden && $('#f-uneven').checked;
-  box.hidden = !on;
-  if (!on) return;
-  const selected = [...document.querySelectorAll('#expense-form input[name=split]:checked')].map((i) => i.value);
-  box.innerHTML = selected.map((id) => `
-    <label class="share-row">
-      <span>${esc(personName(id))}</span>
-      <span class="share-input"><input inputmode="decimal" autocomplete="off" data-share="${id}" placeholder="0,00" value="${esc(state.shareValues?.[id] ?? '')}"><span>€</span></span>
-    </label>`).join('');
+// Umschalten zwischen "Gleich aufteilen" und "Nach Posten"
+function setSplitMode(byItems) {
+  $('#f-split-row').hidden = byItems;
+  $('#f-items-row').hidden = !byItems;
+  $('#f-amount').readOnly = byItems;
+  if (byItems && !state.items.length) {
+    // Was oben schon als Betrag steht, wird der erste Posten.
+    const amount = parseEuro($('#f-amount').value);
+    state.items = [{ name: '', price: amount ? $('#f-amount').value.trim() : '', for: [...PERSON_IDS] },
+      { name: '', price: '', for: [...PERSON_IDS] }];
+  }
+  if (byItems) renderItemRows();
+  updateSplitHint();
 }
 
-// Beim Einschalten: Betrag erst einmal gleichmäßig vorschlagen
-function toggleUneven() {
-  if ($('#f-uneven').checked) {
-    const { amountCents } = readForm();
-    const selected = [...document.querySelectorAll('#expense-form input[name=split]:checked')].map((i) => i.value);
-    const even = amountCents ? splitAmount(amountCents, selected, PERSON_IDS) : {};
-    state.shareValues = Object.fromEntries(selected.map((id) => [id, even[id] ? (even[id] / 100).toFixed(2).replace('.', ',') : '']));
-  }
-  renderShareRows();
+// Eingabezeilen der Posten – nur neu zeichnen, wenn Zeilen dazukommen oder wegfallen
+function renderItemRows() {
+  $('#f-items').innerHTML = state.items.map((item, index) => `
+    <div class="item-row">
+      <input class="item-name" data-item="${index}" data-field="name" maxlength="60" autocomplete="off" placeholder="Was? (optional)" value="${esc(item.name)}">
+      <span class="item-price"><input data-item="${index}" data-field="price" inputmode="decimal" autocomplete="off" placeholder="0,00" value="${esc(item.price)}"><span>€</span></span>
+      <button type="button" class="icon-btn" data-action="item-remove" data-index="${index}" aria-label="Posten entfernen">✕</button>
+      <div class="chips">${PEOPLE.map((p) => `<label class="chip"><input type="checkbox" data-item="${index}" data-person="${p.id}"${item.for.includes(p.id) ? ' checked' : ''}><span>${esc(p.name)}</span></label>`).join('')}</div>
+    </div>`).join('');
+}
+
+function addItemRow() {
+  state.items.push({ name: '', price: '', for: [...PERSON_IDS] });
+  renderItemRows();
+  $(`#f-items input[data-item="${state.items.length - 1}"][data-field=price]`)?.focus();
+  updateSplitHint();
+}
+
+function removeItemRow(index) {
+  state.items.splice(index, 1);
+  if (!state.items.length) state.items.push({ name: '', price: '', for: [...PERSON_IDS] });
+  renderItemRows();
   updateSplitHint();
 }
 
 function updateSplitHint() {
-  const { amountCents, splitAmong, shares } = readForm();
+  const data = readForm();
+  if (isItemMode()) {
+    $('#f-amount').value = data.amountCents ? (data.amountCents / 100).toFixed(2).replace('.', ',') : '';
+    const box = $('#f-items-sum');
+    if (data.invalidPrice) {
+      box.innerHTML = '<span class="error">Bitte gültige Preise eingeben, z. B. 2,49.</span>';
+      return;
+    }
+    const who = PERSON_IDS.filter((id) => data.shares[id]).map((id) => `${esc(personName(id))} ${formatEuro(data.shares[id])}`).join(' · ');
+    box.innerHTML = `<strong>Summe: ${formatEuro(data.amountCents)}</strong>
+      ${who ? `<span class="who">${who}</span>` : ''}
+      ${data.withoutPrice ? `<span class="who">${data.withoutPrice === 1 ? '1 Posten hat' : `${data.withoutPrice} Posten haben`} noch keinen Preis und ${data.withoutPrice === 1 ? 'zählt' : 'zählen'} nicht mit.</span>` : ''}`;
+    return;
+  }
+  const { amountCents, splitAmong } = data;
   const hint = $('#f-split-hint');
-  if (shares) {
-    const values = Object.values(shares);
-    const sum = values.reduce((a, b) => a + (b ?? 0), 0);
-    hint.textContent = values.some((v) => v == null) ? 'Bitte gültige Beträge eingeben, z. B. 12,50.'
-      : !amountCents ? 'Bitte oben zuerst den Betrag eingeben.'
-        : sum === amountCents ? '✓ Passt genau.'
-          : sum < amountCents ? `Noch ${formatEuro(amountCents - sum)} zu verteilen.`
-            : `${formatEuro(sum - amountCents)} zu viel verteilt.`;
-  } else if (!splitAmong.length) {
+  if (!splitAmong.length) {
     hint.textContent = 'Bitte mindestens eine Person auswählen.';
   } else if (splitAmong.length === 1) {
     hint.textContent = `${personName(splitAmong[0])} trägt alles.`;
@@ -2220,22 +2272,23 @@ function updateSplitHint() {
 
 function onSubmitExpense(event) {
   event.preventDefault();
-  const data = readForm();
-  const problem = !data.amountCents ? 'Bitte einen gültigen Betrag eingeben, z. B. 12,50.'
-    : !data.description ? 'Bitte eingeben, wofür das Geld war.'
-      : !data.splitAmong.length ? 'Bitte bei „Für wen?“ mindestens eine Person auswählen (mit Betrag über 0).'
-        : data.shares && Object.values(data.shares).some((v) => v == null) ? 'Bitte bei „Ungleich aufteilen“ gültige Beträge eingeben.'
-          : data.shares && Object.values(data.shares).reduce((a, b) => a + b, 0) !== data.amountCents
-            ? 'Die Anteile müssen zusammen genau den Betrag ergeben.'
+  const { invalidPrice, nobody, withoutPrice, ...data } = readForm();
+  const byItems = Boolean(data.items);
+  const problem = invalidPrice ? 'Bitte bei den Posten gültige Preise eingeben, z. B. 2,49.'
+    : nobody ? `Bei „${nobody.name || 'einem Posten'}“ ist niemand ausgewählt.`
+      : !data.amountCents ? (byItems ? 'Bitte bei den Posten mindestens einen Preis eingeben.' : 'Bitte einen gültigen Betrag eingeben, z. B. 12,50.')
+        : !data.description ? 'Bitte eingeben, wofür das Geld war.'
+          : !data.splitAmong.length ? 'Bitte bei „Für wen?“ mindestens eine Person auswählen.'
             : '';
   if (problem) {
     $('#f-error').textContent = problem;
     return;
   }
+  if (withoutPrice && !confirm(`${withoutPrice === 1 ? '1 Posten hat' : `${withoutPrice} Posten haben`} keinen Preis und ${withoutPrice === 1 ? 'wird' : 'werden'} weggelassen. Trotzdem speichern?`)) return;
 
   const id = state.editingId;
   if (state.formMode === 'recurring') {
-    const { date, ...rest } = data;
+    const { date, items, ...rest } = data;
     const rec = { ...rest, dayOfMonth: Number($('#f-day').value) };
     const saving = id
       ? backend.update('recurring', id, { ...rec, updatedAt: backend.now(), updatedBy: state.me })
@@ -2246,7 +2299,6 @@ function onSubmitExpense(event) {
     return;
   }
 
-  if (data.shares) data.shares = Object.fromEntries(Object.entries(data.shares).filter(([, cents]) => cents > 0));
   const saving = id
     ? backend.update('expenses', id, { ...data, updatedAt: backend.now(), updatedBy: state.me })
     : backend.add('expenses', { ...data, createdAt: backend.now(), createdBy: state.me, settlementId: null });
@@ -2363,6 +2415,8 @@ function onClick(event) {
     case 'search-open': openSearch(); break;
     case 'restore-open': $('#restore-file').click(); break;
     case 'shop-to-expense': shopToExpense(); break;
+    case 'item-add': addItemRow(); break;
+    case 'item-remove': removeItemRow(Number(el.dataset.index)); break;
     case 'add-recurring': openExpenseForm(null, { mode: 'recurring' }); break;
     case 'edit-recurring': openExpenseForm(state.recurring.find((r) => r.id === el.dataset.id), { mode: 'recurring' }); break;
     case 'month': {
@@ -2429,13 +2483,19 @@ document.addEventListener('touchend', onTouchEnd, { passive: true });
 document.addEventListener('touchcancel', onTouchEnd, { passive: true });
 $('#expense-form').addEventListener('submit', onSubmitExpense);
 $('#expense-form').addEventListener('input', (event) => {
-  if (event.target.dataset.share) state.shareValues[event.target.dataset.share] = event.target.value;
+  if (event.target.name === 'splitMode') return; // wird bei "change" erledigt
+  const { item, field } = event.target.dataset;
+  if (item != null && field) state.items[Number(item)][field] = event.target.value;
   $('#f-error').textContent = '';
   updateSplitHint();
 });
 $('#expense-form').addEventListener('change', (event) => {
-  if (event.target.id === 'f-uneven') toggleUneven();
-  else if (event.target.name === 'split') { renderShareRows(); updateSplitHint(); }
+  const { item, person } = event.target.dataset;
+  if (item != null && person) {
+    const list = state.items[Number(item)].for;
+    if (event.target.checked) { if (!list.includes(person)) list.push(person); } else list.splice(list.indexOf(person), 1);
+  }
+  if (event.target.name === 'splitMode') setSplitMode(event.target.value === 'items');
   else updateSplitHint();
 });
 $('#areas-form').addEventListener('submit', onSubmitAreas);

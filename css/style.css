@@ -651,19 +651,27 @@ a.btn.full { width: 100%; }
 .not-due small { font-size: 0.8rem; }
 .plan-cell.off { color: var(--muted); justify-content: center; }
 
-/* ---------- Ungleich aufteilen ---------- */
-.uneven-toggle { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: 600; font-size: 0.95rem; }
-.uneven-toggle input { width: 20px; height: 20px; min-height: 0; padding: 0; accent-color: var(--brand); }
-.shares { display: grid; gap: 8px; margin-top: 6px; }
-.share-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.share-row > span:first-child { font-weight: 600; }
-.share-input { position: relative; display: block; width: 140px; }
-.share-input input {
-  width: 100%; min-height: 44px; padding: 8px 34px 8px 12px; text-align: right;
-  border: 1px solid var(--border); border-radius: 10px; background: var(--bg); font-size: 1rem; color: inherit;
+/* ---------- Aufteilen nach Posten ---------- */
+.items { display: grid; gap: 8px; }
+.item-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 104px 36px; gap: 8px; align-items: center;
+  padding: 10px; border-radius: 12px; background: var(--bg);
 }
-.share-input input:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
-.share-input span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.item-row input.item-name, .item-price input {
+  width: 100%; min-height: 42px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--card); font-size: 1rem; color: inherit;
+}
+.item-price { position: relative; display: block; }
+.item-price input { padding-right: 26px; text-align: right; }
+.item-price span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.item-row input:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
+.item-row .chips { grid-column: 1 / -1; gap: 6px; }
+.item-row .chip span { padding: 6px 12px; font-size: 0.9rem; background: var(--card); }
+.item-row .icon-btn { width: 36px; height: 36px; background: var(--card); }
+.items-sum { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); display: grid; gap: 4px; }
+.items-sum strong { font-size: 1.1rem; }
+.items-sum .who { color: var(--muted); font-size: 0.92rem; }
+input[readonly] { color: var(--muted); }
 
 /* ---------- Reihenfolge der Kategorien ---------- */
 .order-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
