@@ -16,7 +16,10 @@ früheren Gesprächen besprochen und entschieden wurde.
 - **Jul** heißt intern weiterhin `julian` (die ID bleibt, damit alte Daten passen).
 - **Es wird keine neuen Mitbewohner geben** – eine Funktion zum Wechseln von Personen
   ist ausdrücklich nicht gewünscht.
-- Live: **https://tritonfischbart.github.io/Projekt-K-lle/**
+- Live: **https://tritonfischbart.github.io/Projekt-Koelle/**
+- GitHub-Projekt heißt **`Projekt-Koelle`** (GitHub erlaubt keine Umlaute; vorher stand dort
+  automatisch `Projekt-K-lle`). Beim Umbenennen hat sich die Website-Adresse geändert –
+  falls jemand noch die alte Adresse nutzt: App-Symbol löschen und neu anlegen.
 - Demo mit Beispieldaten (ohne Login, speichert nichts): an die Adresse `?demo` anhängen.
 
 ## Wie mit Lukas arbeiten
