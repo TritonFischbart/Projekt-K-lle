@@ -2,24 +2,24 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES, PUSH_TYPES } from './config.js?v=26';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=26';
+import { PEOPLE, CATEGORIES, CHORES, PUSH_TYPES } from './config.js?v=27';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=27';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=26';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=26';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=26';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=26';
-import { compressImage } from './images.js?v=26';
-import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=26';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=26';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=26';
-import { toPlain, expensesCsv } from './export.js?v=26';
-import { firebaseConfig } from './firebase-config.js?v=26';
+} from './chores.js?v=27';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=27';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=27';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=27';
+import { compressImage } from './images.js?v=27';
+import { INVITE_TEMPLATES, isInviteActive, inviteWhen } from './invites.js?v=27';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=27';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=27';
+import { toPlain, expensesCsv } from './export.js?v=27';
+import { firebaseConfig } from './firebase-config.js?v=27';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
-// Versionsnummer aus der Adresse dieser Datei (app.js?v=26) – zeigt, ob das Handy die neueste Version hat
+// Versionsnummer aus der Adresse dieser Datei (app.js?v=27) – zeigt, ob das Handy die neueste Version hat
 const APP_VERSION = new URL(import.meta.url).searchParams.get('v') ?? '?';
 const $ = (selector) => document.querySelector(selector);
 
@@ -153,9 +153,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=26')).createDemoBackend();
+      backend = (await import('./demo.js?v=27')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=26')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=27')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -1210,6 +1210,37 @@ function dayTitle(day) {
 
 
 
+// Wann ein Termin ist, als lesbarer Text für das Detail-Fenster.
+function eventWhen(e) {
+  const long = { weekday: 'long', day: 'numeric', month: 'long' };
+  const short = { weekday: 'short', day: 'numeric', month: 'short' };
+  const date = (d, o) => d.toLocaleDateString('de-DE', o);
+  if (e.allDay) {
+    const last = new Date(e.end.getFullYear(), e.end.getMonth(), e.end.getDate() - 1);
+    return last > e.start ? `${date(e.start, short)} – ${date(last, short)} · ganztägig` : `${date(e.start, long)} · ganztägig`;
+  }
+  if (sameDay(e.start, e.end)) return `${date(e.start, long)} · ${timeOf(e.start)} – ${timeOf(e.end)} Uhr`;
+  return `${date(e.start, short)}, ${timeOf(e.start)} – ${date(e.end, short)}, ${timeOf(e.end)} Uhr`;
+}
+
+// Links in der Beschreibung antippbar machen (Text ist schon mit esc() geschützt).
+function linkify(escaped) {
+  return escaped.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)]/g, (url) => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
+}
+
+function openEvent(id) {
+  const e = state.calendar.events?.find((x) => x.id === id);
+  if (!e) return;
+  const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}`;
+  $('#event-body').innerHTML = `
+    <h2 class="event-detail-title${e.hiddenTitle ? ' muted' : ''}">${esc(e.title)}</h2>
+    <p class="event-detail-row"><span aria-hidden="true">🕒</span><span>${esc(eventWhen(e))}</span></p>
+    ${e.location ? `<p class="event-detail-row"><span aria-hidden="true">📍</span><a href="${esc(maps)}" target="_blank" rel="noopener">${esc(e.location)}</a></p>` : ''}
+    ${e.description ? `<div class="event-detail-desc">${linkify(esc(e.description))}</div>` : ''}
+    ${e.link ? `<a class="btn outline full" href="${esc(e.link)}" target="_blank" rel="noopener">In Google Kalender öffnen</a>` : ''}`;
+  $('#event-dialog').showModal();
+}
+
 function renderKalender() {
   const cal = state.calendar;
   const el = $('#tab-kalender');
@@ -1246,13 +1277,15 @@ function renderKalender() {
         <div class="day">
           <h3 class="day-title${sameDay(g.day, new Date()) ? ' today' : ''}">${dayTitle(g.day)}</h3>
           <ul class="events">${g.events.map((e) => `
-            <li><a class="event" href="${esc(e.link)}" target="_blank" rel="noopener">
+            <li><button type="button" class="event" data-action="event-open" data-id="${esc(e.id)}">
               <span class="event-time">${eventTime(e, g.day)}</span>
               <span class="event-main">
                 <span class="event-title${e.hiddenTitle ? ' muted' : ''}">${esc(e.title)}</span>
                 ${e.location ? `<span class="event-sub">📍 ${esc(e.location)}</span>` : ''}
+                ${e.description ? '<span class="event-sub">📝 Mit Beschreibung</span>' : ''}
               </span>
-            </a></li>`).join('')}</ul>
+              <span class="event-arrow" aria-hidden="true">›</span>
+            </button></li>`).join('')}</ul>
         </div>`).join('')
       : '<p class="empty">In den nächsten 12 Monaten steht nichts an.</p>';
   }
@@ -1689,7 +1722,7 @@ function startCalendarCard() {
       : groups.length ? groups.map((g) => `
         <div class="start-day">
           <span class="start-day-title${sameDay(g.day, new Date()) ? ' today' : ''}">${dayTitle(g.day)}</span>
-          ${g.events.slice(0, 3).map((e) => `<span class="start-event"><span>${e.allDay ? 'ganztägig' : sameDay(e.start, g.day) ? timeOf(e.start) : 'läuft'}</span>${esc(e.title)}</span>`).join('')}
+          ${g.events.slice(0, 3).map((e) => `<button type="button" class="start-event" data-action="event-open" data-id="${esc(e.id)}"><span>${e.allDay ? 'ganztägig' : sameDay(e.start, g.day) ? timeOf(e.start) : 'läuft'}</span>${esc(e.title)}</button>`).join('')}
         </div>`).join('')
         : '<p class="empty">Keine Termine in den nächsten Wochen.</p>';
   return `
@@ -2318,6 +2351,7 @@ function onClick(event) {
     case 'quick-remove': quickRemove(el.dataset.id); break;
     case 'calendar-settings': openCalendarForm(); break;
     case 'calendar-reload': loadEvents(); break;
+    case 'event-open': openEvent(el.dataset.id); break;
     case 'calendar-remove': removeCalendar(); break;
     case 'quick-edit': state.quickEdit = !state.quickEdit; renderEinkauf(); break;
     case 'delete-expense': deleteExpense(); break;
