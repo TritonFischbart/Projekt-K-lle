@@ -257,7 +257,10 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - Bereitstellung: GitHub Action bei Änderungen an `functions/**` oder den geteilten
   `js/`-Dateien, oder per Hand („Run workflow“). Lukas wollte, dass man das Verhalten nach dem
   Ausprobieren anpasst („wie das Handling wird“) – Rückmeldungen einplanen.
-- Den VAPID-Schlüssel (öffentlich) in `js/firebase-config.js` → `vapidKey` eintragen.
+- VAPID-Schlüssel (öffentlich) steht in `js/firebase-config.js` → `vapidKey` (eingetragen 1. Nov. 2026).
+- ⚠️ Das Google-Cloud-Rechnungskonto lief am 1. Nov. 2026 als **kostenlose Testphase (90 Tage)**.
+  Wird es bis Ende Januar 2027 nicht auf ein vollständiges Konto umgestellt („Upgrade“ in der
+  Google Cloud Console), stoppt Google die Dienste → Push-Nachrichten würden aufhören.
 
 ### 📌 Infos
 - **Schwarzes Brett**: Notizen mit Vorlagen (WLAN, Vermieter, Zählerstände, Schlüssel,
