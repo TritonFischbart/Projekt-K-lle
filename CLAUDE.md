@@ -18,8 +18,9 @@ früheren Gesprächen besprochen und entschieden wurde.
   ist ausdrücklich nicht gewünscht.
 - Live: **https://tritonfischbart.github.io/Projekt-Koelle/**
 - GitHub-Projekt heißt **`Projekt-Koelle`** (GitHub erlaubt keine Umlaute; vorher stand dort
-  automatisch `Projekt-K-lle`). Beim Umbenennen hat sich die Website-Adresse geändert –
-  falls jemand noch die alte Adresse nutzt: App-Symbol löschen und neu anlegen.
+  automatisch `Projekt-K-lle`). Umbenannt am 1. Nov. 2026. Dadurch hat sich die
+  Website-Adresse geändert – falls jemand noch die alte Adresse nutzt: App-Symbol löschen
+  und neu anlegen. GitHub leitet den alten Projektnamen für Git und API weiter.
 - Demo mit Beispieldaten (ohne Login, speichert nichts): an die Adresse `?demo` anhängen.
 
 ## Wie mit Lukas arbeiten
