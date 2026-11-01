@@ -112,7 +112,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 | Sammlung | Inhalt |
 |---|---|
 | `members/{jana,julian,lukas}` | Wer welcher Person zugeordnet ist (`uid`, `email`) – beim ersten Login „Wer bist du?“ |
-| `expenses` | Ausgaben: `description, amountCents, paidBy, splitAmong[], category, date, settlementId` |
+| `expenses` | Ausgaben: `description, amountCents, paidBy, splitAmong[], category, date, settlementId`, optional `shares {person: cent}` und `items [{name, cents, for[]}]` |
 | `payments` | Abgehakte Überweisungen: `from, to, amountCents, date, settlementId` |
 | `settlements` | Abrechnungen („Alles ausgeglichen“): `expenseCount, totalCents, createdAt` |
 | `chores/{KW}_{bereich}` | Putzplan-Status pro Woche: `assignee, doneBy, doneAt` |
@@ -180,9 +180,15 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 
 ### 💶 Ausgaben
 - Beträge in **Cent**. Aufteilung normalerweise **gleichmäßig** auf die ausgewählten Personen.
-- **Ungleich aufteilen** (Häkchen im Formular): Beträge pro Person eingeben, müssen genau
-  die Summe ergeben (Feld `shares {person: cent}`; `expenseShares` in `money.js` rechnet,
-  ohne passende `shares` gleichmäßig). Nicht bei Daueraufträgen. Liste zeigt „(ungleich)“.
+- **Wie aufteilen?** „Gleich aufteilen“ oder **„🧾 Nach Posten“** (ersetzt seit Nov. 2026 das
+  alte „Ungleich aufteilen“ – Lukas fand es beim Einkaufen zu kompliziert, weil man selbst
+  rechnen musste): Posten mit Preis eingeben und pro Posten antippen, für wen (Jana/Jul/Lukas).
+  Summe und Anteile rechnet die App (`itemShares` in `money.js`, Rundung erst am Ende, Summe
+  geht immer genau auf). Gespeichert: `items [{name, cents, for[]}]` + berechnete `shares`,
+  `amountCents`, `splitAmong`. Ganz leere Zeilen werden ignoriert, Zeilen mit Name ohne Preis
+  nach Rückfrage weggelassen. Alte Einträge mit nur `shares` öffnen als ein Posten pro Person.
+  „Als Ausgabe eintragen“ (Einkauf) füllt die besorgten Sachen als Posten vor. Nicht bei
+  Daueraufträgen. Liste zeigt „(nach Posten)“. `expenseShares` rechnet weiter mit `shares`.
 - Kategorien: Lebensmittel, Haushalt, Internet & Strom, Freizeit, Sonstiges.
 - Einträge bearbeiten und löschen erlaubt.
 - Ausgleichs-Vorschlag mit möglichst wenigen Überweisungen.
@@ -203,7 +209,7 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - **Mengen**: „2x Milch“, „Milch 2x“, „500 g Hack“, „3 Dosen Tomaten“ → Menge wird
   als kleines Schild angezeigt (Feld `amount`), Name bleibt für Kategorie/Schnellauswahl.
 - **Als Ausgabe eintragen**: eigene besorgte Sachen werden mit einem Tipp als Ausgabe
-  vorausgefüllt (nur noch Betrag eingeben).
+  vorausgefüllt – jede Sache als Posten (nur noch Preise eintippen, ggf. Personen abwählen).
 - **Kategorien in Supermarkt-Reihenfolge** (orientiert am Weg durch einen
   typischen Laden): Obst & Gemüse → Brot → Kühlregal → Fleisch & Fisch → Tiefkühl
   → Vorrat → Frühstück → Süßes → Getränke → Drogerie → Haushalt → Sonstiges.
