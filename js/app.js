@@ -2,22 +2,24 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=21';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=21';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=22';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=22';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=21';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=21';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=21';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=21';
-import { compressImage } from './images.js?v=21';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=21';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=21';
-import { toPlain, expensesCsv } from './export.js?v=21';
-import { firebaseConfig } from './firebase-config.js?v=21';
+} from './chores.js?v=22';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=22';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=22';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=22';
+import { compressImage } from './images.js?v=22';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=22';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=22';
+import { toPlain, expensesCsv } from './export.js?v=22';
+import { firebaseConfig } from './firebase-config.js?v=22';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
+// Versionsnummer aus der Adresse dieser Datei (app.js?v=22) – zeigt, ob das Handy die neueste Version hat
+const APP_VERSION = new URL(import.meta.url).searchParams.get('v') ?? '?';
 const $ = (selector) => document.querySelector(selector);
 
 const state = {
@@ -147,9 +149,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=21')).createDemoBackend();
+      backend = (await import('./demo.js?v=22')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=21')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=22')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -319,27 +321,51 @@ function renderAll() {
 // ---------- Wischen zwischen den Bereichen ----------
 
 const TAB_ORDER = ['start', 'ausgaben', 'einkauf', 'putzplan', 'infos'];
-let swipeStart = null;
+let swipe = null;
 
 function onTouchStart(event) {
+  swipe = null;
+  if (event.touches.length !== 1 || $('#screen-app').hidden) return;
   const t = event.touches[0];
-  swipeStart = null;
-  if (event.touches.length !== 1) return;
   // Nicht am Bildschirmrand (dort ist die "Zurück"-Geste des Handys) und nicht in Eingabefeldern
-  if (t.clientX < 24 || t.clientX > window.innerWidth - 24) return;
-  if (event.target.closest('input, textarea, select, .no-swipe')) return;
-  swipeStart = { x: t.clientX, y: t.clientY, time: Date.now() };
+  if (t.clientX < 20 || t.clientX > window.innerWidth - 20) return;
+  if (event.target.closest('input, textarea, select, dialog, .tabbar, .no-swipe')) return;
+  swipe = { x: t.clientX, y: t.clientY, lastX: t.clientX, lastY: t.clientY, time: Date.now() };
+  // Wird die Seite während des Wischens neu gezeichnet (neue Daten kommen an), hängt das
+  // berührte Element nicht mehr in der Seite – seine Ereignisse erreichen dann `document`
+  // nicht mehr. Deshalb direkt am berührten Element mithören.
+  const el = event.target;
+  const done = (e) => {
+    el.removeEventListener('touchmove', onTouchMove);
+    el.removeEventListener('touchend', done);
+    el.removeEventListener('touchcancel', done);
+    if (!el.isConnected) onTouchEnd(e);
+  };
+  el.addEventListener('touchmove', onTouchMove, { passive: true });
+  el.addEventListener('touchend', done, { passive: true });
+  el.addEventListener('touchcancel', done, { passive: true });
+}
+
+// Letzte Fingerposition merken: Manche Handys melden das Ende einer Bewegung als
+// "abgebrochen" (touchcancel), wenn der Browser selbst scrollen will.
+function onTouchMove(event) {
+  if (!swipe || event.touches.length !== 1 || event.handledBySwipe) return;
+  event.handledBySwipe = true; // nicht doppelt zählen (Element und document)
+  swipe.lastX = event.touches[0].clientX;
+  swipe.lastY = event.touches[0].clientY;
 }
 
 function onTouchEnd(event) {
-  if (!swipeStart) return;
-  const t = event.changedTouches[0];
-  const dx = t.clientX - swipeStart.x;
-  const dy = t.clientY - swipeStart.y;
-  const quick = Date.now() - swipeStart.time < 700;
-  swipeStart = null;
-  // Nur deutliches, waagerechtes Wischen zählt
-  if (!quick || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+  if (!swipe) return;
+  const t = event.changedTouches?.[0];
+  const x = t ? t.clientX : swipe.lastX;
+  const y = t ? t.clientY : swipe.lastY;
+  const dx = x - swipe.x;
+  const dy = y - swipe.y;
+  const quick = Date.now() - swipe.time < 800;
+  swipe = null;
+  // Nur deutliches, eher waagerechtes Wischen zählt
+  if (!quick || Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
   if (document.querySelector('dialog[open]')) return;
   const current = state.tab === 'kalender' ? 'start' : state.tab;
   const next = TAB_ORDER[TAB_ORDER.indexOf(current) + (dx < 0 ? 1 : -1)];
@@ -1323,7 +1349,8 @@ function renderInfos() {
         <button class="btn outline full" data-action="export-csv">Ausgaben als Tabelle (Excel)</button>
         <button class="btn outline full" data-action="restore-open">Sicherung zurückspielen</button>
       </div>
-    </section>`;
+    </section>
+    <p class="app-version">Projekt Kölle · Version ${APP_VERSION}</p>`;
 }
 
 const imagesOf = (noteId) => state.noteImages
@@ -2071,8 +2098,10 @@ function onClick(event) {
 }
 
 document.addEventListener('click', onClick);
-$('#screen-app main').addEventListener('touchstart', onTouchStart, { passive: true });
-$('#screen-app main').addEventListener('touchend', onTouchEnd, { passive: true });
+document.addEventListener('touchstart', onTouchStart, { passive: true });
+document.addEventListener('touchmove', onTouchMove, { passive: true });
+document.addEventListener('touchend', onTouchEnd, { passive: true });
+document.addEventListener('touchcancel', onTouchEnd, { passive: true });
 $('#expense-form').addEventListener('submit', onSubmitExpense);
 $('#expense-form').addEventListener('input', (event) => {
   if (event.target.dataset.share) state.shareValues[event.target.dataset.share] = event.target.value;

@@ -656,3 +656,7 @@ a.btn.full { width: 100%; }
   .tab.slide-from-right, .tab.slide-from-left { animation: none; }
 }
 main { overflow-x: clip; }
+
+.app-version { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: 0.8rem; }
+/* Seitliches Wischen gehört der App (Bereich wechseln), Hoch/Runter-Scrollen und Zoomen dem Browser */
+#screen-app main { touch-action: pan-y pinch-zoom; }

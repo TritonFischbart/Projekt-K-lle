@@ -89,6 +89,8 @@ früheren Gesprächen besprochen und entschieden wurde.
 - **Versionsnummer `?v=N`**: Bei jeder Änderung an CSS/JS die Nummer überall
   erhöhen (in `index.html`, allen Imports in `js/app.js` und `js/demo.js`),
   sonst laden Handys alte Dateien. Aktuell: siehe `index.html`.
+  Die Nummer wird unten unter „Infos“ angezeigt („Version N“) – so kann Lukas prüfen,
+  ob sein Handy schon die neue Version hat.
 - Beide Backends (`firebase.js`, `demo.js`) haben dieselben Funktionen:
   `onUser, login, logout, watch, add, update, remove, set, settleAll, now`
   (Demo zusätzlich `demoEvents`). Neue Funktionen in beiden ergänzen.
@@ -137,6 +139,10 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - **Wischen** nach links/rechts wechselt zwischen den Bereichen in Leisten-Reihenfolge
   (Kalender zählt als „Start“). Nur deutliches, schnelles, waagerechtes Wischen; nicht am
   Bildschirmrand (iPhone-„Zurück“), nicht in Eingabefeldern, nicht bei offenem Fenster.
+  Wichtig (war ein echter Fehler auf dem Handy): `touch-action: pan-y pinch-zoom` auf `main`,
+  damit der Browser seitliche Bewegungen nicht selbst übernimmt; zusätzlich am berührten
+  Element mithören, weil die App bei neuen Daten neu zeichnet und das Element sonst aus
+  der Seite fällt (Ende des Wischens käme nicht an); `touchcancel` zählt wie `touchend`.
   Elemente mit Klasse `no-swipe` sind ausgenommen.
 - Untere Leiste: **Start · Ausgaben · Einkauf · Putzplan · Infos**. Der **Kalender**
   hat keinen eigenen Knopf mehr – er hängt an der Startseite („Ganzer Kalender ›“,
