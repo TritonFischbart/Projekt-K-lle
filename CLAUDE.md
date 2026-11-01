@@ -286,7 +286,7 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 ## Merkliste / To-do für später (noch nicht gebaut)
 
 > Die Aufgaben stehen auch als **GitHub-Issues** im Projekt (Reiter „Issues“):
-> #11 Termine direkt eintragen · #12 Push-Nachrichten ·
+> #11 Termine direkt eintragen ·
 > #13 Kassenbon-Fotos · #14 Müllabfuhr-Termine · #15 Ideen-Sammlung · #24 WG-Radio.
 > Wenn etwas davon erledigt ist, das Issue schließen und hier austragen.
 
@@ -295,8 +295,8 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   braucht eine Google-Anmeldung mit Kalender-Berechtigung (OAuth, Zustimmungsbildschirm
   in der Google Cloud Console, im Testmodus Nutzer eintragen) – vorher mit Lukas klären.
 
-- **Push-Nachrichten** (#12): gebaut und am 1. Nov. 2026 erfolgreich bei Firebase bereitgestellt.
-  Offen, bis es auf den Handys getestet ist. Das Dienstkonto `github-deploy` braucht die Rollen
+- ~~**Push-Nachrichten** (#12)~~ – erledigt am 1. Nov. 2026: bereitgestellt, Test-Nachricht auf
+  Lukas' Handy kam an. Rückmeldungen zum Verhalten (Uhrzeiten, Menge) noch einplanen. Das Dienstkonto `github-deploy` braucht die Rollen
   Editor, Project IAM Admin und Cloud Functions Admin; die Cloud Billing API muss an sein.
   Beim allerersten Bereitstellen kam „Eventarc Service Agent“ – das löst sich nach ein paar Minuten von selbst.
 - **Kassenbon-Fotos** bei Ausgaben – bräuchte Firebase Storage (ebenfalls „Blaze“).
