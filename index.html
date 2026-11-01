@@ -8,11 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kölle">
   <title>Projekt Kölle</title>
-  <link rel="icon" href="icons/icon.svg?v=28" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=28">
-  <link rel="manifest" href="manifest.webmanifest?v=28">
-  <link rel="stylesheet" href="css/style.css?v=28">
-  <script type="module" src="js/app.js?v=28"></script>
+  <link rel="icon" href="icons/icon.svg?v=29" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=29">
+  <link rel="manifest" href="manifest.webmanifest?v=29">
+  <link rel="stylesheet" href="css/style.css?v=29">
+  <script type="module" src="js/app.js?v=29"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -23,7 +23,7 @@
   <!-- Firebase ist noch nicht eingerichtet -->
   <div id="screen-setup" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=28" alt="" class="logo">
+      <img src="icons/icon.svg?v=29" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
       <a class="btn primary" href="?demo">Demo ansehen</a>
@@ -33,7 +33,7 @@
   <!-- Anmelden -->
   <div id="screen-login" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=28" alt="" class="logo">
+      <img src="icons/icon.svg?v=29" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p>Die WG-Seite von Jana, Jul und Lukas.</p>
       <button class="btn primary" data-action="login">Mit Google anmelden</button>
@@ -61,9 +61,12 @@
 
   <!-- Die eigentliche App -->
   <div id="screen-app" class="screen" hidden>
-    <div id="pull-refresh" class="pull-refresh" hidden aria-live="polite"><span class="pull-icon" aria-hidden="true">↓</span><span class="pull-text">Zum Aktualisieren ziehen</span></div>
+    <div id="pull-refresh" class="pull-refresh" hidden aria-live="polite">
+      <svg class="pull-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.3 1.5h3.4l.5 2.9a8 8 0 0 1 2 .8l2.4-1.7 2.4 2.4-1.7 2.4c.4.6.6 1.3.8 2l2.9.5v3.4l-2.9.5a8 8 0 0 1-.8 2l1.7 2.4-2.4 2.4-2.4-1.7a8 8 0 0 1-2 .8l-.5 2.9h-3.4l-.5-2.9a8 8 0 0 1-2-.8l-2.4 1.7-2.4-2.4 1.7-2.4a8 8 0 0 1-.8-2l-2.9-.5v-3.4l2.9-.5c.2-.7.4-1.4.8-2L3.5 5.9l2.4-2.4 2.4 1.7c.6-.4 1.3-.6 2-.8zM12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6z"/></svg>
+      <span class="pull-text visually-hidden">Zum Aktualisieren ziehen</span>
+    </div>
     <header class="topbar">
-      <div class="brand"><img src="icons/icon.svg?v=28" alt=""> Projekt Kölle</div>
+      <div class="brand"><img src="icons/icon.svg?v=29" alt=""> Projekt Kölle</div>
       <span class="topbar-actions">
         <button class="icon-btn settings-btn" data-action="tab" data-tab="settings" aria-label="Einstellungen">⚙️</button>
         <button class="me-button" id="me-button" data-action="tab" data-tab="settings"></button>
