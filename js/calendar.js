@@ -9,15 +9,16 @@ function localDate(iso) {
   return new Date(y, m - 1, d);
 }
 
-export function eventsUrl(calendarId, apiKey, from, to) {
+export function eventsUrl(calendarId, apiKey, from, to, pageToken = '') {
   const params = new URLSearchParams({
     key: apiKey,
     timeMin: from.toISOString(),
     timeMax: to.toISOString(),
     singleEvents: 'true',
     orderBy: 'startTime',
-    maxResults: '100',
+    maxResults: '250',
   });
+  if (pageToken) params.set('pageToken', pageToken);
   return `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`;
 }
 
@@ -59,16 +60,27 @@ export function groupByDay(events, now = new Date()) {
   return groupsSorted;
 }
 
-export async function fetchEvents({ calendarId, apiKey }, days = 60) {
+// Termine der nächsten 12 Monate (bei sehr vielen Terminen in mehreren Portionen).
+export const CALENDAR_DAYS = 366;
+
+export async function fetchEvents({ calendarId, apiKey }, days = CALENDAR_DAYS) {
   const from = startOfDay(new Date());
-  const response = await fetch(eventsUrl(calendarId, apiKey, from, addDays(from, days)));
-  if (!response.ok) {
-    const err = new Error(`Google antwortet mit Fehler ${response.status}`);
-    err.status = response.status;
-    throw err;
+  const to = addDays(from, days);
+  const items = [];
+  let pageToken = '';
+  for (let page = 0; page < 4; page += 1) {
+    const response = await fetch(eventsUrl(calendarId, apiKey, from, to, pageToken));
+    if (!response.ok) {
+      const err = new Error(`Google antwortet mit Fehler ${response.status}`);
+      err.status = response.status;
+      throw err;
+    }
+    const data = await response.json();
+    items.push(...(data.items ?? []));
+    pageToken = data.nextPageToken ?? '';
+    if (!pageToken) break;
   }
-  const data = await response.json();
-  return (data.items ?? []).filter((i) => i.status !== 'cancelled').map(normalizeEvent);
+  return items.filter((i) => i.status !== 'cancelled').map(normalizeEvent);
 }
 
 // Link, um in Google Kalender einen neuen Termin anzulegen.

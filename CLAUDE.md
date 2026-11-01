@@ -215,8 +215,11 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
   wiederhergestellt/auf deren Stand gesetzt, neuere Einträge bleiben erhalten.
 
 ### 📅 Kalender
-- Variante „eigenes Design“ (nicht eingebettet): nächste 60 Tage, gruppiert nach Tagen,
+- Variante „eigenes Design“ (nicht eingebettet): **nächste 12 Monate** (früher 60 Tage –
+  Lukas wollte z. B. Karneval im Februar sehen), gruppiert nach Tagen, mit
+  Monats-Überschriften ab dem nächsten Monat. Bis zu 4 × 250 Termine (mehrere Abrufe).
   „＋ Termin eintragen“ öffnet Google Kalender, Aktualisierung alle 5 Minuten.
+  Startseite zeigt nur die nächsten 3 Tage mit Terminen.
 
 ## Merkliste / To-do für später (noch nicht gebaut)
 

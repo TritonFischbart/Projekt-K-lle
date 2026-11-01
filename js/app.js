@@ -2,20 +2,20 @@
 
 // Die Nummer hinter ?v= bei jeder Änderung erhöhen (auch in index.html),
 // damit Handys sofort die neuen Dateien laden statt alter gespeicherter.
-import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=19';
-import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=19';
+import { PEOPLE, CATEGORIES, CHORES } from './config.js?v=20';
+import { parseEuro, formatEuro, splitAmount, expenseShares, computeBalances, suggestTransfers } from './money.js?v=20';
 import {
   mondayOf, addDays, isoWeek, weekKey, weekIndex, planWeek, weeksUntilDue,
   guessAreaIcon, DEFAULT_AREA_ICON, AREA_ICON_CHOICES,
-} from './chores.js?v=19';
-import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=19';
-import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=19';
-import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=19';
-import { compressImage } from './images.js?v=19';
-import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=19';
-import { monthStats, monthTrend, currentMonth } from './stats.js?v=19';
-import { toPlain, expensesCsv } from './export.js?v=19';
-import { firebaseConfig } from './firebase-config.js?v=19';
+} from './chores.js?v=20';
+import { fetchEvents, groupByDay, newEventLink } from './calendar.js?v=20';
+import { SHOP_CATEGORIES, guessCategory, parseShoppingInput } from './shopcats.js?v=20';
+import { isAwayForWeek, isAwayOn, upcomingAbsences } from './absences.js?v=20';
+import { compressImage } from './images.js?v=20';
+import { monthKey, addMonths, initialLastBooked, dueMonths, recurringExpenseId } from './recurring.js?v=20';
+import { monthStats, monthTrend, currentMonth } from './stats.js?v=20';
+import { toPlain, expensesCsv } from './export.js?v=20';
+import { firebaseConfig } from './firebase-config.js?v=20';
 
 const PERSON_IDS = PEOPLE.map((p) => p.id);
 const $ = (selector) => document.querySelector(selector);
@@ -147,9 +147,9 @@ async function start() {
   const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('HIER');
   try {
     if (params.has('demo')) {
-      backend = (await import('./demo.js?v=19')).createDemoBackend();
+      backend = (await import('./demo.js?v=20')).createDemoBackend();
     } else if (configured) {
-      backend = (await import('./firebase.js?v=19')).createFirebaseBackend(firebaseConfig);
+      backend = (await import('./firebase.js?v=20')).createFirebaseBackend(firebaseConfig);
     } else {
       showScreen('setup');
       return;
@@ -1153,8 +1153,16 @@ function renderKalender() {
     body = '<div class="center-pad"><div class="spinner"></div></div>';
   } else {
     const groups = groupByDay(cal.events);
+    // Monats-Überschrift, sobald ein neuer Monat beginnt (nicht für den laufenden Monat)
+    let lastMonth = `${new Date().getFullYear()}-${new Date().getMonth()}`;
+    const monthHead = (day) => {
+      const key = `${day.getFullYear()}-${day.getMonth()}`;
+      if (key === lastMonth) return '';
+      lastMonth = key;
+      return `<h3 class="month-head">${day.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}</h3>`;
+    };
     body = groups.length
-      ? groups.map((g) => `
+      ? groups.map((g) => `${monthHead(g.day)}
         <div class="day">
           <h3 class="day-title${sameDay(g.day, new Date()) ? ' today' : ''}">${dayTitle(g.day)}</h3>
           <ul class="events">${g.events.map((e) => `
@@ -1166,7 +1174,7 @@ function renderKalender() {
               </span>
             </a></li>`).join('')}</ul>
         </div>`).join('')
-      : '<p class="empty">In den nächsten 60 Tagen steht nichts an.</p>';
+      : '<p class="empty">In den nächsten 12 Monaten steht nichts an.</p>';
   }
 
   const allHidden = cal.events?.length > 0 && cal.events.every((e) => e.hiddenTitle);
