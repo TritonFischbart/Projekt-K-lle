@@ -55,7 +55,7 @@ Voraussetzung: Mein Code ist im Haupt-Zweig `main` angekommen (das erledigen wir
 3. Bei „Build and deployment“ → Source: **Deploy from a branch**.
 4. Branch: **`main`**, Ordner: **`/ (root)`** → **Save**.
 5. Nach 1–2 Minuten ist die Seite online unter:
-   **https://tritonfischbart.github.io/Projekt-K-lle/**
+   **https://tritonfischbart.github.io/Projekt-Koelle/**
 
 ---
 
@@ -133,4 +133,4 @@ geht das Anlegen nicht).
 | Jemand hat sich aus Versehen den falschen Namen ausgesucht | In Firebase → Firestore Database → Sammlung `members` → den falschen Eintrag löschen. Dann neu anmelden. |
 
 Ausprobieren ohne Einrichtung: an die Adresse `?demo` anhängen, z. B.
-`https://tritonfischbart.github.io/Projekt-K-lle/?demo`
+`https://tritonfischbart.github.io/Projekt-Koelle/?demo`
