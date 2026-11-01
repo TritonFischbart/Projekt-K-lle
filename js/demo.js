@@ -1,7 +1,7 @@
 // Demo-Modus (Adresse mit ?demo am Ende): Beispieldaten nur im Browser,
 // damit man die Seite ohne Firebase ausprobieren kann. Nichts wird gespeichert.
 
-import { weekKey } from './chores.js?v=19';
+import { weekKey } from './chores.js?v=20';
 
 // Einfacher gezeichneter Grundriss als Beispielbild
 function demoFloorPlan() {
@@ -182,6 +182,8 @@ export function createDemoBackend() {
         { id: 'k3', title: 'Vermieter kommt (Heizung)', location: '', allDay: false, start: at(2, 9, 30), end: at(2, 10, 30), link: '' },
         { id: 'k4', title: 'Sperrmüll', location: 'vor dem Haus', allDay: true, start: day(6), end: day(7), link: '' },
         { id: 'k5', title: 'Geburtstag Jul 🎂', location: '', allDay: true, start: day(12), end: day(13), link: '' },
+        { id: 'k6', title: 'Weiberfastnacht 🎭', location: 'Heumarkt', allDay: true, start: day(102), end: day(103), link: '' },
+        { id: 'k7', title: 'Rosenmontagszug', location: 'Innenstadt', allDay: false, start: at(106, 10), end: at(106, 18), link: '' },
       ];
     },
   };
