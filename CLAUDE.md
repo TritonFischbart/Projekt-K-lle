@@ -137,8 +137,10 @@ Einkäufe, die schon als Ausgabe eingetragen wurden, haben `expensed: true`.
 - Personen-Reihenfolge: **Jana, Jul, Lukas**. Farben: Jana hellbraun `#a97b50`,
   Jul blau `#2b6cb0`, Lukas grün `#2f7d4f`.
 - **Wischen** nach links/rechts wechselt zwischen den Bereichen in Leisten-Reihenfolge
-  (Kalender zählt als „Start“). Nur deutliches, schnelles, waagerechtes Wischen; nicht am
-  Bildschirmrand (iPhone-„Zurück“), nicht in Eingabefeldern, nicht bei offenem Fenster.
+  (Kalender zählt als „Start“). Nur deutliches, schnelles, waagerechtes Wischen; nicht in
+  Eingabefeldern, nicht bei offenem Fenster. **Vom Rand** wischen ist in der Home-Bildschirm-App
+  erlaubt (Lukas wischt gewohnt vom Rand); nur im Browser bleiben 16 px Rand für Safaris
+  „Zurück“-Geste frei.
   Wichtig (war ein echter Fehler auf dem Handy): `touch-action: pan-y pinch-zoom` auf `main`,
   damit der Browser seitliche Bewegungen nicht selbst übernimmt; zusätzlich am berührten
   Element mithören, weil die App bei neuen Daten neu zeichnet und das Element sonst aus
