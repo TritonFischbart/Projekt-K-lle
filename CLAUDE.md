@@ -45,7 +45,7 @@ früheren Gesprächen besprochen und entschieden wurde.
 
 - **Reine statische Website**: HTML, CSS, JavaScript (ES-Module), **kein Build-Schritt**,
   keine Frameworks, kein npm. Ausnahme: der Versand-Dienst für Push-Nachrichten in `functions/`
-  (Node 20, Firebase Cloud Functions v2, npm nur dort).
+  (Node 22, Firebase Cloud Functions v2, npm nur dort; Node 20 wird von Google abgeschaltet).
 - **Hosting:** GitHub Pages aus `main`, Ordner `/ (root)`. Datei `.nojekyll` vorhanden.
 - **Datenbank & Login:** Firebase, Projekt-ID `projekt-koelle`. Tarif **„Blaze“** (seit Nov. 2026,
   für Push-Nachrichten; Kreditkarte hinterlegt, Budget-Warnung 1 €, Kosten praktisch 0 €).
