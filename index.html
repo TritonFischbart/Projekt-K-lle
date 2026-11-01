@@ -8,11 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kölle">
   <title>Projekt Kölle</title>
-  <link rel="icon" href="icons/icon.svg?v=23" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=23">
-  <link rel="manifest" href="manifest.webmanifest?v=23">
-  <link rel="stylesheet" href="css/style.css?v=23">
-  <script type="module" src="js/app.js?v=23"></script>
+  <link rel="icon" href="icons/icon.svg?v=24" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=24">
+  <link rel="manifest" href="manifest.webmanifest?v=24">
+  <link rel="stylesheet" href="css/style.css?v=24">
+  <script type="module" src="js/app.js?v=24"></script>
 </head>
 <body>
   <!-- Ladebildschirm -->
@@ -23,7 +23,7 @@
   <!-- Firebase ist noch nicht eingerichtet -->
   <div id="screen-setup" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=23" alt="" class="logo">
+      <img src="icons/icon.svg?v=24" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p id="setup-text">Fast geschafft! Die Verbindung zur gemeinsamen Datenbank (Firebase) ist noch nicht eingerichtet. Wie das geht, steht in der Datei <strong>ANLEITUNG.md</strong>.</p>
       <a class="btn primary" href="?demo">Demo ansehen</a>
@@ -33,7 +33,7 @@
   <!-- Anmelden -->
   <div id="screen-login" class="screen center" hidden>
     <div class="welcome">
-      <img src="icons/icon.svg?v=23" alt="" class="logo">
+      <img src="icons/icon.svg?v=24" alt="" class="logo">
       <h1>Projekt Kölle</h1>
       <p>Die WG-Seite von Jana, Jul und Lukas.</p>
       <button class="btn primary" data-action="login">Mit Google anmelden</button>
@@ -62,7 +62,7 @@
   <!-- Die eigentliche App -->
   <div id="screen-app" class="screen" hidden>
     <header class="topbar">
-      <div class="brand"><img src="icons/icon.svg?v=23" alt=""> Projekt Kölle</div>
+      <div class="brand"><img src="icons/icon.svg?v=24" alt=""> Projekt Kölle</div>
       <button class="me-button" id="me-button" data-action="logout"></button>
     </header>
     <div id="demo-banner" class="demo-banner" hidden>Demo-Modus – nichts wird gespeichert</div>
@@ -317,6 +317,39 @@
       </fieldset>
       <p class="error" id="p-error"></p>
       <div class="form-actions"><button type="submit" class="btn primary">Abstimmung starten</button></div>
+    </form>
+  </dialog>
+
+  <!-- Formular: "Wer hat Bock?" -->
+  <dialog id="invite-dialog" class="sheet">
+    <form id="invite-form" class="sheet-form" novalidate>
+      <div class="sheet-head">
+        <h2>Wer hat Bock?</h2>
+        <button type="button" class="icon-btn" data-action="close-form" aria-label="Schließen">✕</button>
+      </div>
+      <div class="chips" id="i-templates"></div>
+      <label class="field">
+        <span class="label">Was?</span>
+        <span class="invite-title-row">
+          <input id="i-emoji" class="invite-emoji" maxlength="8" aria-label="Symbol" autocomplete="off">
+          <input id="i-title" maxlength="60" placeholder="z. B. Ich koche – wer isst mit?" autocomplete="off">
+        </span>
+      </label>
+      <fieldset class="field">
+        <legend class="label">Wann?</legend>
+        <div class="chips" id="i-when">
+          <label class="chip"><input type="radio" name="iWhen" value="now" checked><span>Jetzt</span></label>
+          <label class="chip"><input type="radio" name="iWhen" value="today"><span>Heute um …</span></label>
+          <label class="chip"><input type="radio" name="iWhen" value="tomorrow"><span>Morgen um …</span></label>
+        </div>
+        <input type="time" id="i-time" value="19:00" hidden>
+      </fieldset>
+      <label class="field">
+        <span class="label">Notiz (optional)</span>
+        <input id="i-note" maxlength="80" placeholder="z. B. Spaghetti Bolo, Treffpunkt Flur" autocomplete="off">
+      </label>
+      <p class="error" id="i-error"></p>
+      <div class="form-actions"><button type="submit" class="btn primary">Reinstellen</button></div>
     </form>
   </dialog>
 
